@@ -61,8 +61,6 @@ public class CassandraCQLClient extends DB {
   private static ConsistencyLevel writeConsistencyLevel = ConsistencyLevel.ONE;
 
   public static final String YCSB_KEY = "y_id";
-  public static final String KEYSPACE_PROPERTY = "cassandra.keyspace";
-  public static final String KEYSPACE_PROPERTY_DEFAULT = "ycsb";
   public static final String USERNAME_PROPERTY = "cassandra.username";
   public static final String PASSWORD_PROPERTY = "cassandra.password";
 
@@ -133,9 +131,6 @@ public class CassandraCQLClient extends DB {
 
         String username = getProperties().getProperty(USERNAME_PROPERTY);
         String password = getProperties().getProperty(PASSWORD_PROPERTY);
-
-        String keyspace = getProperties().getProperty(KEYSPACE_PROPERTY,
-            KEYSPACE_PROPERTY_DEFAULT);
 
         readConsistencyLevel = ConsistencyLevel.valueOf(
             getProperties().getProperty(READ_CONSISTENCY_LEVEL_PROPERTY,
@@ -364,7 +359,7 @@ public class CassandraCQLClient extends DB {
       HashMap<String, ByteIterator> tuple;
       while (!rs.isExhausted()) {
         Row row = rs.one();
-        tuple = new HashMap<String, ByteIterator>();
+        tuple = new HashMap<>();
 
         ColumnDefinitions cd = row.getColumnDefinitions();
 

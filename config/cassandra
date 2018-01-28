@@ -1,5 +1,4 @@
 hosts=10.10.0.4
-cassandra.keyspace=euw
 cassandra.readconsistencylevel=QUORUM
 cassandra.writeconsistencylevel=QUORUM
 cassandra.readtimeoutmillis=15000
