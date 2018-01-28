@@ -22,6 +22,11 @@ public class KeyspaceManager {
   private String mainKeyspace;
 
 
+  long localOpsTotalTime;
+  int localOpsTotalN;
+  long remoteOpsTotalTime;
+  int remoteOpsTotalN;
+
   private int nSequenceOps;
   private int currentSequenceOp;
 
@@ -43,6 +48,11 @@ public class KeyspaceManager {
     remoteLambda = Integer.valueOf(properties.getProperty(REMOTE_LAMBDA_PROPERTY));
 
     running = Boolean.valueOf(properties.getProperty(DO_TRANSACTIONS_PROPERTY));
+
+    remoteOpsTotalN = 0;
+    remoteOpsTotalTime = 0;
+    localOpsTotalN = 0;
+    localOpsTotalTime = 0;
 
     /*
     local = true;
@@ -66,14 +76,24 @@ public class KeyspaceManager {
 
     currentSequenceOp++;
     if (currentSequenceOp >= nSequenceOps) {
+
       long newMillis = System.currentTimeMillis();
+      if(lastMillis != -1){
+        long time = newMillis - lastMillis;
+        if(local){
+          localOpsTotalTime += time;
+          localOpsTotalN += nSequenceOps;
+        } else {
+          remoteOpsTotalTime += time;
+          remoteOpsTotalN += nSequenceOps;
+        }
+      }
+
       local = !local;
       currentKeyspace = getRandomKeyspace(local);
       nSequenceOps = getPoisson(local);
       currentSequenceOp = 0;
-      if(lastMillis != -1)
-        System.out.println("Sequence time: " + (newMillis-lastMillis));
-      System.out.println("New sequence: " + nSequenceOps + " " + currentKeyspace);
+      //System.out.println("New sequence: " + nSequenceOps + " " + currentKeyspace);
       lastMillis = newMillis;
     }
     return currentKeyspace;
@@ -100,4 +120,9 @@ public class KeyspaceManager {
     return k - 1;
   }
 
+
+  public void printMetrics() {
+    System.out.println("Local ops:" + localOpsTotalN + " time:" + localOpsTotalTime + " ops/s:" + (localOpsTotalN/localOpsTotalTime/1000));
+    System.out.println("Remote ops:" + remoteOpsTotalN + " time:" + remoteOpsTotalTime + " ops/s:" + (remoteOpsTotalN/remoteOpsTotalTime/1000));
+  }
 }
