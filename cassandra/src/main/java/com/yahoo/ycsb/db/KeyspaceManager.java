@@ -47,6 +47,7 @@ public class KeyspaceManager {
     currentKeyspace = getRandomKeyspace(local);
     int poisson = getPoisson(local);
     nSequenceOps = r.nextInt(poisson);
+    System.out.println("New sequence: " + nSequenceOps + " " + currentKeyspace);
     currentSequenceOp = -1;
   }
 
@@ -61,6 +62,7 @@ public class KeyspaceManager {
       currentKeyspace = getRandomKeyspace(local);
       nSequenceOps = getPoisson(local);
       currentSequenceOp = 0;
+      System.out.println("New sequence: " + nSequenceOps + " " + currentKeyspace);
     }
     return currentKeyspace;
   }
