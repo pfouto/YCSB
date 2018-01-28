@@ -3,6 +3,8 @@ package com.yahoo.ycsb.db;
 import java.util.Properties;
 import java.util.Random;
 
+import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
+
 public class KeyspaceManager {
 
   private static final String LOCAL_LAMBDA_PROPERTY = "cassandra.locallambda";
@@ -10,11 +12,14 @@ public class KeyspaceManager {
   private static final String LOCAL_KEYSPACES_PROPERTY = "cassandra.localkeyspaces";
   private static final String REMOTE_KEYSPACES_PROPERTY = "cassandra.remotekeyspaces";
 
+  private static final String MAIN_KEYSPACE_PROPERTY = "cassandra.mainkeyspace";
+
   private int localLambda;
   private int remoteLambda;
 
   private String[] localKeyspaces;
   private String[] remoteKeyspaces;
+  private String mainKeyspace;
 
 
   private int nSequenceOps;
@@ -25,11 +30,17 @@ public class KeyspaceManager {
 
   private static Random r = new Random();
 
+  private boolean running;
+
   KeyspaceManager(Properties properties){
     localKeyspaces = properties.getProperty(LOCAL_KEYSPACES_PROPERTY).split("\\s+");
     remoteKeyspaces = properties.getProperty(REMOTE_KEYSPACES_PROPERTY).split("\\s+");
+    mainKeyspace = properties.getProperty(MAIN_KEYSPACE_PROPERTY);
+
     localLambda = Integer.valueOf(properties.getProperty(LOCAL_LAMBDA_PROPERTY));
     remoteLambda = Integer.valueOf(properties.getProperty(REMOTE_LAMBDA_PROPERTY));
+
+    running = Boolean.valueOf(properties.getProperty(DO_TRANSACTIONS_PROPERTY));
 
     local = true;
     //noinspection ConstantConditions
@@ -40,6 +51,9 @@ public class KeyspaceManager {
   }
 
   public String nextOpKeyspace(){
+    if(!running)
+      return mainKeyspace;
+
     currentSequenceOp++;
     if (currentSequenceOp >= nSequenceOps) {
       local = !local;

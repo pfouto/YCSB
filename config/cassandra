@@ -6,3 +6,5 @@ cassandra.locallambda=300
 cassandra.remotelambda=15
 cassandra.localkeyspaces=
 cassandra.remotekeyspaces=
+
+cassandra.mainkeyspace=
