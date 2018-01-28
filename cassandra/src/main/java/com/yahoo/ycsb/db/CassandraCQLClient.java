@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -69,21 +70,15 @@ public class CassandraCQLClient extends DB {
   public static final String PORT_PROPERTY = "port";
   public static final String PORT_PROPERTY_DEFAULT = "9042";
 
-  public static final String READ_CONSISTENCY_LEVEL_PROPERTY =
-      "cassandra.readconsistencylevel";
+  public static final String READ_CONSISTENCY_LEVEL_PROPERTY = "cassandra.readconsistencylevel";
   public static final String READ_CONSISTENCY_LEVEL_PROPERTY_DEFAULT = "ONE";
-  public static final String WRITE_CONSISTENCY_LEVEL_PROPERTY =
-      "cassandra.writeconsistencylevel";
+  public static final String WRITE_CONSISTENCY_LEVEL_PROPERTY = "cassandra.writeconsistencylevel";
   public static final String WRITE_CONSISTENCY_LEVEL_PROPERTY_DEFAULT = "ONE";
 
-  public static final String MAX_CONNECTIONS_PROPERTY =
-      "cassandra.maxconnections";
-  public static final String CORE_CONNECTIONS_PROPERTY =
-      "cassandra.coreconnections";
-  public static final String CONNECT_TIMEOUT_MILLIS_PROPERTY =
-      "cassandra.connecttimeoutmillis";
-  public static final String READ_TIMEOUT_MILLIS_PROPERTY =
-      "cassandra.readtimeoutmillis";
+  public static final String MAX_CONNECTIONS_PROPERTY = "cassandra.maxconnections";
+  public static final String CORE_CONNECTIONS_PROPERTY = "cassandra.coreconnections";
+  public static final String CONNECT_TIMEOUT_MILLIS_PROPERTY = "cassandra.connecttimeoutmillis";
+  public static final String READ_TIMEOUT_MILLIS_PROPERTY = "cassandra.readtimeoutmillis";
 
   public static final String TRACING_PROPERTY = "cassandra.tracing";
   public static final String TRACING_PROPERTY_DEFAULT = "false";
@@ -97,6 +92,8 @@ public class CassandraCQLClient extends DB {
   private static boolean debug = false;
 
   private static boolean trace = false;
+
+  private static Map<Thread, KeyspaceManager> keyspaceManagerMap = new HashMap<>();
   
   /**
    * Initialize any state for this DB. Called once per DB instance; there is one
@@ -111,6 +108,8 @@ public class CassandraCQLClient extends DB {
     // Synchronized so that we only have a single
     // cluster/session instance for all the threads.
     synchronized (INIT_COUNT) {
+
+      keyspaceManagerMap.put(Thread.currentThread(), new KeyspaceManager(getProperties()));
 
       // Check if the cluster has already been initialized
       if (cluster != null) {
@@ -193,7 +192,7 @@ public class CassandraCQLClient extends DB {
               discoveredHost.getRack());
         }
 
-        session = cluster.connect(keyspace);
+        session = cluster.connect();
 
       } catch (Exception e) {
         throw new DBException(e);
@@ -240,6 +239,8 @@ public class CassandraCQLClient extends DB {
   @Override
   public Status read(String table, String key, Set<String> fields,
       Map<String, ByteIterator> result) {
+
+    String keyspace = keyspaceManagerMap.get(Thread.currentThread()).nextOpKeyspace();
     try {
       Statement stmt;
       Select.Builder selectBuilder;
@@ -253,7 +254,7 @@ public class CassandraCQLClient extends DB {
         }
       }
 
-      stmt = selectBuilder.from(table).where(QueryBuilder.eq(YCSB_KEY, key))
+      stmt = selectBuilder.from(keyspace, table).where(QueryBuilder.eq(YCSB_KEY, key))
           .limit(1);
       stmt.setConsistencyLevel(readConsistencyLevel);
 
@@ -315,7 +316,9 @@ public class CassandraCQLClient extends DB {
    */
   @Override
   public Status scan(String table, String startkey, int recordcount,
-      Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
+                     Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
+
+    String keyspace = keyspaceManagerMap.get(Thread.currentThread()).nextOpKeyspace();
 
     try {
       Statement stmt;
@@ -330,7 +333,7 @@ public class CassandraCQLClient extends DB {
         }
       }
 
-      stmt = selectBuilder.from(table);
+      stmt = selectBuilder.from(keyspace, table);
 
       // The statement builder is not setup right for tokens.
       // So, we need to build it manually.
@@ -424,8 +427,10 @@ public class CassandraCQLClient extends DB {
   public Status insert(String table, String key,
       Map<String, ByteIterator> values) {
 
+    String keyspace = keyspaceManagerMap.get(Thread.currentThread()).nextOpKeyspace();
+
     try {
-      Insert insertStmt = QueryBuilder.insertInto(table);
+      Insert insertStmt = QueryBuilder.insertInto(keyspace, table);
 
       // Add key
       insertStmt.value(YCSB_KEY, key);
@@ -470,10 +475,12 @@ public class CassandraCQLClient extends DB {
   @Override
   public Status delete(String table, String key) {
 
+    String keyspace = keyspaceManagerMap.get(Thread.currentThread()).nextOpKeyspace();
+
     try {
       Statement stmt;
 
-      stmt = QueryBuilder.delete().from(table)
+      stmt = QueryBuilder.delete().from(keyspace, table)
           .where(QueryBuilder.eq(YCSB_KEY, key));
       stmt.setConsistencyLevel(writeConsistencyLevel);
 

@@ -3,3 +3,7 @@ cassandra.keyspace=euw
 cassandra.readconsistencylevel=QUORUM
 cassandra.writeconsistencylevel=QUORUM
 cassandra.readtimeoutmillis=15000
+cassandra.locallambda=300
+cassandra.remotelambda=15
+cassandra.localkeyspaces=
+cassandra.remotekeyspaces=
