@@ -56,7 +56,7 @@ public class KeyspaceManager {
     currentSequenceOp = 0;
     nSequenceOps = 0;
 
-    lastMillis = System.currentTimeMillis();
+    lastMillis = -1;
   }
 
   public String nextOpKeyspace(){
@@ -71,7 +71,8 @@ public class KeyspaceManager {
       currentKeyspace = getRandomKeyspace(local);
       nSequenceOps = getPoisson(local);
       currentSequenceOp = 0;
-      System.out.println("Sequence time: " + (newMillis-lastMillis));
+      if(lastMillis != -1)
+        System.out.println("Sequence time: " + (newMillis-lastMillis));
       System.out.println("New sequence: " + nSequenceOps + " " + currentKeyspace);
       lastMillis = newMillis;
     }
