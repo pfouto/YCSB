@@ -32,6 +32,8 @@ public class KeyspaceManager {
 
   private boolean running;
 
+  private long lastMillis;
+
   KeyspaceManager(Properties properties){
     localKeyspaces = properties.getProperty(LOCAL_KEYSPACES_PROPERTY).split("\\s+");
     remoteKeyspaces = properties.getProperty(REMOTE_KEYSPACES_PROPERTY).split("\\s+");
@@ -42,13 +44,19 @@ public class KeyspaceManager {
 
     running = Boolean.valueOf(properties.getProperty(DO_TRANSACTIONS_PROPERTY));
 
+    /*
     local = true;
-    //noinspection ConstantConditions
     currentKeyspace = getRandomKeyspace(local);
     int poisson = getPoisson(local);
     nSequenceOps = r.nextInt(poisson);
     System.out.println("New sequence: " + nSequenceOps + " " + currentKeyspace);
-    currentSequenceOp = -1;
+    currentSequenceOp = -1;*/
+
+    local = false;
+    currentSequenceOp = 0;
+    nSequenceOps = 0;
+
+    lastMillis = System.currentTimeMillis();
   }
 
   public String nextOpKeyspace(){
@@ -58,11 +66,14 @@ public class KeyspaceManager {
 
     currentSequenceOp++;
     if (currentSequenceOp >= nSequenceOps) {
+      long newMillis = System.currentTimeMillis();
       local = !local;
       currentKeyspace = getRandomKeyspace(local);
       nSequenceOps = getPoisson(local);
       currentSequenceOp = 0;
+      System.out.println("Sequence time: " + (lastMillis - newMillis));
       System.out.println("New sequence: " + nSequenceOps + " " + currentKeyspace);
+      lastMillis = newMillis;
     }
     return currentKeyspace;
   }
