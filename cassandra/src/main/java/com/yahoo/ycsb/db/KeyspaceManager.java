@@ -51,8 +51,10 @@ public class KeyspaceManager {
   }
 
   public String nextOpKeyspace(){
-    if(!running)
+    if(!running){
+      System.out.println(mainKeyspace);
       return mainKeyspace;
+    }
 
     currentSequenceOp++;
     if (currentSequenceOp >= nSequenceOps) {
@@ -61,6 +63,7 @@ public class KeyspaceManager {
       nSequenceOps = getPoisson(local);
       currentSequenceOp = 0;
     }
+    System.out.println(currentKeyspace);
     return currentKeyspace;
   }
 
