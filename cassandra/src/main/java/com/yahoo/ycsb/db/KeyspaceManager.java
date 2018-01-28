@@ -122,7 +122,7 @@ public class KeyspaceManager {
 
 
   public void printMetrics() {
-    System.out.println("Local ops:" + localOpsTotalN + " time:" + localOpsTotalTime + " ops/s:" + (localOpsTotalN/localOpsTotalTime/1000));
-    System.out.println("Remote ops:" + remoteOpsTotalN + " time:" + remoteOpsTotalTime + " ops/s:" + (remoteOpsTotalN/remoteOpsTotalTime/1000));
+    System.out.println("Local ops:" + localOpsTotalN + " time:" + localOpsTotalTime + " ops/s:" + (localOpsTotalN/(localOpsTotalTime/1000)));
+    System.out.println("Remote ops:" + remoteOpsTotalN + " time:" + remoteOpsTotalTime + " ops/s:" + (remoteOpsTotalN/(remoteOpsTotalTime/1000)));
   }
 }
