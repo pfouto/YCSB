@@ -212,15 +212,15 @@ public class CassandraCQLClient extends DB {
       if (Boolean.valueOf(getProperties().getProperty(DO_TRANSACTIONS_PROPERTY))) {
 
         try {
-          if (writer == null)
+          if (writer == null) {
             writer = new PrintWriter(new FileOutputStream(new File(getProperties().getProperty("cassandra.file"))));
+          }
 
           List<Map.Entry<String, Long>> allOps = keyspaceManagerMap.get(Thread.currentThread()).getAllOps();
           writer.println("[Client] " + Thread.currentThread().toString() + " " + allOps.size());
           for (Map.Entry<String, Long> e : allOps) {
             writer.println(e.getKey() + ":" + e.getValue());
           }
-          writer.close();
         } catch (FileNotFoundException e) {
           e.printStackTrace();
         }
@@ -228,6 +228,7 @@ public class CassandraCQLClient extends DB {
 
       final int curInitCount = INIT_COUNT.decrementAndGet();
       if (curInitCount <= 0) {
+        writer.close();
         session.close();
         cluster.close();
         cluster = null;
