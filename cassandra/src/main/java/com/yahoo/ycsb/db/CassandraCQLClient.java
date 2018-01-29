@@ -45,6 +45,8 @@ import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
+
 /**
  * Cassandra 2.x CQL client.
  *
@@ -207,7 +209,8 @@ public class CassandraCQLClient extends DB {
 
       final int curInitCount = INIT_COUNT.decrementAndGet();
       if (curInitCount <= 0) {
-        KeyspaceManager.printOverall();
+        if(Boolean.valueOf(getProperties().getProperty(DO_TRANSACTIONS_PROPERTY)))
+          KeyspaceManager.printOverall();
         session.close();
         cluster.close();
         cluster = null;
