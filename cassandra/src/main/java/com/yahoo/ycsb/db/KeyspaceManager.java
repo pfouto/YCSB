@@ -137,8 +137,8 @@ public class KeyspaceManager {
   }
 
   public static void printOverall(){
-    System.out.println("Local ops:" + sumLocalOpsTotalN + " time:" + sumLocalOpsTotalTime + " ops/s:" + (sumLocalOpsTotalN/(sumLocalOpsTotalTime/1000)));
-    System.out.println("Remote ops:" + sumRemoteOpsTotalN + " time:" + sumRemoteOpsTotalTime + " ops/s:" + (sumRemoteOpsTotalN/(sumRemoteOpsTotalTime/1000)));
+    System.out.println("Local ops:" + sumLocalOpsTotalN + " time:" + sumLocalOpsTotalTime + " ops/s:" + ((double)sumLocalOpsTotalN/(sumLocalOpsTotalTime/1000)));
+    System.out.println("Remote ops:" + sumRemoteOpsTotalN + " time:" + sumRemoteOpsTotalTime + " ops/s:" + ((double)sumRemoteOpsTotalN/(sumRemoteOpsTotalTime/1000)));
 
   }
 }
