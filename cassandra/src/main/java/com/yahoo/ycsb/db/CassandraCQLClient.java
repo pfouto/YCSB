@@ -1,18 +1,18 @@
 /**
  * Copyright (c) 2013-2015 YCSB contributors. All rights reserved.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License. See accompanying LICENSE file.
- *
+ * <p>
  * Submitted by Chrisjan Matser on 10/11/2010.
  */
 package com.yahoo.ycsb.db;
@@ -37,11 +37,12 @@ import com.yahoo.ycsb.DB;
 import com.yahoo.ycsb.DBException;
 import com.yahoo.ycsb.Status;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -82,7 +83,7 @@ public class CassandraCQLClient extends DB {
 
   public static final String TRACING_PROPERTY = "cassandra.tracing";
   public static final String TRACING_PROPERTY_DEFAULT = "false";
-  
+
   /**
    * Count the number of times initialized to teardown on the last
    * {@link #cleanup()}.
@@ -94,7 +95,7 @@ public class CassandraCQLClient extends DB {
   private static boolean trace = false;
 
   private static Map<Thread, KeyspaceManager> keyspaceManagerMap = new HashMap<>();
-  
+
   /**
    * Initialize any state for this DB. Called once per DB instance; there is one
    * DB instance per client thread.
@@ -121,7 +122,7 @@ public class CassandraCQLClient extends DB {
         debug =
             Boolean.parseBoolean(getProperties().getProperty("debug", "false"));
         trace = Boolean.valueOf(getProperties().getProperty(TRACING_PROPERTY, TRACING_PROPERTY_DEFAULT));
-        
+
         String host = getProperties().getProperty(HOSTS_PROPERTY);
         if (host == null) {
           throw new DBException(String.format(
@@ -154,7 +155,7 @@ public class CassandraCQLClient extends DB {
         if (maxConnections != null) {
           cluster.getConfiguration().getPoolingOptions()
               .setMaxConnectionsPerHost(HostDistance.LOCAL,
-              Integer.valueOf(maxConnections));
+                  Integer.valueOf(maxConnections));
         }
 
         String coreConnections = getProperties().getProperty(
@@ -162,7 +163,7 @@ public class CassandraCQLClient extends DB {
         if (coreConnections != null) {
           cluster.getConfiguration().getPoolingOptions()
               .setCoreConnectionsPerHost(HostDistance.LOCAL,
-              Integer.valueOf(coreConnections));
+                  Integer.valueOf(coreConnections));
         }
 
         String connectTimoutMillis = getProperties().getProperty(
@@ -205,12 +206,25 @@ public class CassandraCQLClient extends DB {
   public void cleanup() throws DBException {
 
     synchronized (INIT_COUNT) {
-      keyspaceManagerMap.get(Thread.currentThread()).finish();
+
+      if (Boolean.valueOf(getProperties().getProperty(DO_TRANSACTIONS_PROPERTY))) {
+        final PrintWriter writer;
+        try {
+          writer = new PrintWriter(new FileOutputStream(new File(getProperties().getProperty("cassandra.file")), true));
+
+          List<Map.Entry<String, Long>> allOps = keyspaceManagerMap.get(Thread.currentThread()).getAllOps();
+          writer.println("Client:" + Thread.currentThread().toString());
+          for (Map.Entry<String, Long> e : allOps) {
+            writer.print(e.getKey() + ":" + e.getValue());
+          }
+          writer.close();
+        } catch (FileNotFoundException e) {
+          e.printStackTrace();
+        }
+      }
 
       final int curInitCount = INIT_COUNT.decrementAndGet();
       if (curInitCount <= 0) {
-        if(Boolean.valueOf(getProperties().getProperty(DO_TRANSACTIONS_PROPERTY)))
-          KeyspaceManager.printOverall();
         session.close();
         cluster.close();
         cluster = null;
@@ -240,9 +254,10 @@ public class CassandraCQLClient extends DB {
    */
   @Override
   public Status read(String table, String key, Set<String> fields,
-      Map<String, ByteIterator> result) {
+                     Map<String, ByteIterator> result) {
 
-    String keyspace = keyspaceManagerMap.get(Thread.currentThread()).nextOpKeyspace();
+    KeyspaceManager keyspaceManager = keyspaceManagerMap.get(Thread.currentThread());
+    String keyspace = keyspaceManager.nextOpKeyspace();
     try {
       Statement stmt;
       Select.Builder selectBuilder;
@@ -266,8 +281,10 @@ public class CassandraCQLClient extends DB {
       if (trace) {
         stmt.enableTracing();
       }
-      
+
+      long startTime = System.nanoTime();
       ResultSet rs = session.execute(stmt);
+      long timeTaken = System.nanoTime() - startTime;
 
       if (rs.isExhausted()) {
         return Status.NOT_FOUND;
@@ -285,6 +302,8 @@ public class CassandraCQLClient extends DB {
           result.put(def.getName(), null);
         }
       }
+
+      keyspaceManager.opDone(timeTaken);
 
       return Status.OK;
 
@@ -320,7 +339,8 @@ public class CassandraCQLClient extends DB {
   public Status scan(String table, String startkey, int recordcount,
                      Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
 
-    String keyspace = keyspaceManagerMap.get(Thread.currentThread()).nextOpKeyspace();
+    KeyspaceManager keyspaceManager = keyspaceManagerMap.get(Thread.currentThread());
+    String keyspace = keyspaceManager.nextOpKeyspace();
 
     try {
       Statement stmt;
@@ -360,8 +380,10 @@ public class CassandraCQLClient extends DB {
       if (trace) {
         stmt.enableTracing();
       }
-      
+
+      long startTime = System.nanoTime();
       ResultSet rs = session.execute(stmt);
+      long timeTaken = System.nanoTime() - startTime;
 
       HashMap<String, ByteIterator> tuple;
       while (!rs.isExhausted()) {
@@ -381,6 +403,7 @@ public class CassandraCQLClient extends DB {
 
         result.add(tuple);
       }
+      keyspaceManager.opDone(timeTaken);
 
       return Status.OK;
 
@@ -427,9 +450,10 @@ public class CassandraCQLClient extends DB {
    */
   @Override
   public Status insert(String table, String key,
-      Map<String, ByteIterator> values) {
+                       Map<String, ByteIterator> values) {
 
-    String keyspace = keyspaceManagerMap.get(Thread.currentThread()).nextOpKeyspace();
+    KeyspaceManager keyspaceManager = keyspaceManagerMap.get(Thread.currentThread());
+    String keyspace = keyspaceManager.nextOpKeyspace();
 
     try {
       Insert insertStmt = QueryBuilder.insertInto(keyspace, table);
@@ -454,8 +478,12 @@ public class CassandraCQLClient extends DB {
       if (trace) {
         insertStmt.enableTracing();
       }
-      
+
+      long startTime = System.nanoTime();
       session.execute(insertStmt);
+      long timeTaken = System.nanoTime() - startTime;
+
+      keyspaceManager.opDone(timeTaken);
 
       return Status.OK;
     } catch (Exception e) {
@@ -477,7 +505,8 @@ public class CassandraCQLClient extends DB {
   @Override
   public Status delete(String table, String key) {
 
-    String keyspace = keyspaceManagerMap.get(Thread.currentThread()).nextOpKeyspace();
+    KeyspaceManager keyspaceManager = keyspaceManagerMap.get(Thread.currentThread());
+    String keyspace = keyspaceManager.nextOpKeyspace();
 
     try {
       Statement stmt;
@@ -492,9 +521,12 @@ public class CassandraCQLClient extends DB {
       if (trace) {
         stmt.enableTracing();
       }
-      
-      session.execute(stmt);
 
+      long startTime = System.nanoTime();
+      session.execute(stmt);
+      long timeTaken = System.nanoTime() - startTime;
+
+      keyspaceManager.opDone(timeTaken);
       return Status.OK;
     } catch (Exception e) {
       e.printStackTrace();

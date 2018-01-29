@@ -1,9 +1,11 @@
 package com.yahoo.ycsb.db;
 
-import java.util.Properties;
-import java.util.Random;
+import com.sun.xml.internal.xsom.impl.scd.Iterators;
+
+import java.util.*;
 
 import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
+
 
 public class KeyspaceManager {
 
@@ -21,17 +23,6 @@ public class KeyspaceManager {
   private String[] remoteKeyspaces;
   private String mainKeyspace;
 
-
-  long localOpsTotalTime;
-  int localOpsTotalN;
-  long remoteOpsTotalTime;
-  int remoteOpsTotalN;
-
-  static long sumLocalOpsTotalTime = 0;
-  static int sumLocalOpsTotalN = 0;
-  static long sumRemoteOpsTotalTime = 0;
-  static int sumRemoteOpsTotalN = 0;
-
   private int nSequenceOps;
   private int currentSequenceOp;
 
@@ -42,7 +33,7 @@ public class KeyspaceManager {
 
   private boolean running;
 
-  private long lastMillis;
+  List<Map.Entry<String, Long>> allOps;
 
   KeyspaceManager(Properties properties){
     localKeyspaces = properties.getProperty(LOCAL_KEYSPACES_PROPERTY).split("\\s+");
@@ -54,24 +45,11 @@ public class KeyspaceManager {
 
     running = Boolean.valueOf(properties.getProperty(DO_TRANSACTIONS_PROPERTY));
 
-    remoteOpsTotalN = 0;
-    remoteOpsTotalTime = 0;
-    localOpsTotalN = 0;
-    localOpsTotalTime = 0;
-
-    /*
-    local = true;
-    currentKeyspace = getRandomKeyspace(local);
-    int poisson = getPoisson(local);
-    nSequenceOps = r.nextInt(poisson);
-    System.out.println("New sequence: " + nSequenceOps + " " + currentKeyspace);
-    currentSequenceOp = -1;*/
-
     local = false;
     currentSequenceOp = 0;
-    nSequenceOps = 0;
+    nSequenceOps = -1;
 
-    lastMillis = -1;
+    allOps = new LinkedList<>();
   }
 
   public String nextOpKeyspace(){
@@ -80,28 +58,23 @@ public class KeyspaceManager {
     }
 
     currentSequenceOp++;
+
+    //next sequence
     if (currentSequenceOp >= nSequenceOps) {
-
-      long newMillis = System.currentTimeMillis();
-      if(lastMillis != -1){
-        long time = newMillis - lastMillis;
-        if(local){
-          localOpsTotalTime += time;
-          localOpsTotalN += nSequenceOps;
-        } else {
-          remoteOpsTotalTime += time;
-          remoteOpsTotalN += nSequenceOps;
-        }
-      }
-
       local = !local;
       currentKeyspace = getRandomKeyspace(local);
       nSequenceOps = getPoisson(local);
       currentSequenceOp = 0;
-      //System.out.println("New sequence: " + nSequenceOps + " " + currentKeyspace);
-      lastMillis = newMillis;
     }
     return currentKeyspace;
+  }
+
+  public void opDone(long nanosTaken){
+    if(!running)
+      return;
+
+    allOps.add(new AbstractMap.SimpleImmutableEntry<String, Long>(local ? "local" : "remote", nanosTaken));
+
   }
 
   private String getRandomKeyspace(boolean local) {
@@ -125,20 +98,7 @@ public class KeyspaceManager {
     return k - 1;
   }
 
-
-  public void finish() {
-    sumLocalOpsTotalN += localOpsTotalN;
-    sumLocalOpsTotalTime += localOpsTotalTime;
-    sumRemoteOpsTotalN += remoteOpsTotalN;
-    sumRemoteOpsTotalTime += remoteOpsTotalTime;
-
-    //System.out.println("Local ops:" + localOpsTotalN + " time:" + localOpsTotalTime + " ops/s:" + (localOpsTotalN/(localOpsTotalTime/1000)));
-    //System.out.println("Remote ops:" + remoteOpsTotalN + " time:" + remoteOpsTotalTime + " ops/s:" + (remoteOpsTotalN/(remoteOpsTotalTime/1000)));
-  }
-
-  public static void printOverall(){
-    System.out.println("Local ops:" + sumLocalOpsTotalN + " time:" + sumLocalOpsTotalTime + " ops/s:" + ((double)sumLocalOpsTotalN/(sumLocalOpsTotalTime/1000)));
-    System.out.println("Remote ops:" + sumRemoteOpsTotalN + " time:" + sumRemoteOpsTotalTime + " ops/s:" + ((double)sumRemoteOpsTotalN/(sumRemoteOpsTotalTime/1000)));
-
+  public List<Map.Entry<String, Long>> getAllOps() {
+    return allOps;
   }
 }
