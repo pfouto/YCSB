@@ -213,9 +213,9 @@ public class CassandraCQLClient extends DB {
           writer = new PrintWriter(new FileOutputStream(new File(getProperties().getProperty("cassandra.file")), true));
 
           List<Map.Entry<String, Long>> allOps = keyspaceManagerMap.get(Thread.currentThread()).getAllOps();
-          writer.println("Client:" + Thread.currentThread().toString());
+          writer.println("[Client] " + Thread.currentThread().toString());
           for (Map.Entry<String, Long> e : allOps) {
-            writer.print(e.getKey() + ":" + e.getValue());
+            writer.println(e.getKey() + ":" + e.getValue());
           }
           writer.close();
         } catch (FileNotFoundException e) {
