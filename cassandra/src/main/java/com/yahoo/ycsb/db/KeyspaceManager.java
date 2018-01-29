@@ -27,6 +27,11 @@ public class KeyspaceManager {
   long remoteOpsTotalTime;
   int remoteOpsTotalN;
 
+  static long sumLocalOpsTotalTime = 0;
+  static int sumLocalOpsTotalN = 0;
+  static long sumRemoteOpsTotalTime = 0;
+  static int sumRemoteOpsTotalN = 0;
+
   private int nSequenceOps;
   private int currentSequenceOp;
 
@@ -121,8 +126,19 @@ public class KeyspaceManager {
   }
 
 
-  public void printMetrics() {
-    System.out.println("Local ops:" + localOpsTotalN + " time:" + localOpsTotalTime + " ops/s:" + (localOpsTotalN/(localOpsTotalTime/1000)));
-    System.out.println("Remote ops:" + remoteOpsTotalN + " time:" + remoteOpsTotalTime + " ops/s:" + (remoteOpsTotalN/(remoteOpsTotalTime/1000)));
+  public void finish() {
+    sumLocalOpsTotalN += localOpsTotalN;
+    sumLocalOpsTotalTime += localOpsTotalTime;
+    sumRemoteOpsTotalN += remoteOpsTotalN;
+    sumRemoteOpsTotalTime += remoteOpsTotalTime;
+
+    //System.out.println("Local ops:" + localOpsTotalN + " time:" + localOpsTotalTime + " ops/s:" + (localOpsTotalN/(localOpsTotalTime/1000)));
+    //System.out.println("Remote ops:" + remoteOpsTotalN + " time:" + remoteOpsTotalTime + " ops/s:" + (remoteOpsTotalN/(remoteOpsTotalTime/1000)));
+  }
+
+  public static void printOverall(){
+    System.out.println("Local ops:" + sumLocalOpsTotalN + " time:" + sumLocalOpsTotalTime + " ops/s:" + (sumLocalOpsTotalN/(sumLocalOpsTotalTime/1000)));
+    System.out.println("Remote ops:" + sumRemoteOpsTotalN + " time:" + sumRemoteOpsTotalTime + " ops/s:" + (sumRemoteOpsTotalN/(sumRemoteOpsTotalTime/1000)));
+
   }
 }

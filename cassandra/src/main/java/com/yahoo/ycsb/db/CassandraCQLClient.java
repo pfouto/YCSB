@@ -203,9 +203,11 @@ public class CassandraCQLClient extends DB {
   public void cleanup() throws DBException {
 
     synchronized (INIT_COUNT) {
-      keyspaceManagerMap.get(Thread.currentThread()).printMetrics();
+      keyspaceManagerMap.get(Thread.currentThread()).finish();
+
       final int curInitCount = INIT_COUNT.decrementAndGet();
       if (curInitCount <= 0) {
+        KeyspaceManager.printOverall();
         session.close();
         cluster.close();
         cluster = null;
