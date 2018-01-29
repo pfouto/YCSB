@@ -50,7 +50,7 @@ import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
 
 /**
  * Cassandra 2.x CQL client.
- *
+ * <p>
  * See {@code cassandra2/README.md} for details.
  *
  * @author cmatser
@@ -95,6 +95,8 @@ public class CassandraCQLClient extends DB {
   private static boolean trace = false;
 
   private static Map<Thread, KeyspaceManager> keyspaceManagerMap = new HashMap<>();
+  private static PrintWriter writer;
+
 
   /**
    * Initialize any state for this DB. Called once per DB instance; there is one
@@ -208,12 +210,13 @@ public class CassandraCQLClient extends DB {
     synchronized (INIT_COUNT) {
 
       if (Boolean.valueOf(getProperties().getProperty(DO_TRANSACTIONS_PROPERTY))) {
-        final PrintWriter writer;
+
         try {
-          writer = new PrintWriter(new FileOutputStream(new File(getProperties().getProperty("cassandra.file")), true));
+          if (writer == null)
+            writer = new PrintWriter(new FileOutputStream(new File(getProperties().getProperty("cassandra.file"))));
 
           List<Map.Entry<String, Long>> allOps = keyspaceManagerMap.get(Thread.currentThread()).getAllOps();
-          writer.println("[Client] " + Thread.currentThread().toString());
+          writer.println("[Client] " + Thread.currentThread().toString() + " " + allOps.size());
           for (Map.Entry<String, Long> e : allOps) {
             writer.println(e.getKey() + ":" + e.getValue());
           }
@@ -242,14 +245,10 @@ public class CassandraCQLClient extends DB {
    * Read a record from the database. Each field/value pair from the result will
    * be stored in a HashMap.
    *
-   * @param table
-   *          The name of the table
-   * @param key
-   *          The record key of the record to read.
-   * @param fields
-   *          The list of fields to read, or null for all of them
-   * @param result
-   *          A HashMap of field/value pairs for the result
+   * @param table  The name of the table
+   * @param key    The record key of the record to read.
+   * @param fields The list of fields to read, or null for all of them
+   * @param result A HashMap of field/value pairs for the result
    * @return Zero on success, a non-zero error code on error
    */
   @Override
@@ -318,21 +317,16 @@ public class CassandraCQLClient extends DB {
   /**
    * Perform a range scan for a set of records in the database. Each field/value
    * pair from the result will be stored in a HashMap.
-   *
+   * <p>
    * Cassandra CQL uses "token" method for range scan which doesn't always yield
    * intuitive results.
    *
-   * @param table
-   *          The name of the table
-   * @param startkey
-   *          The record key of the first record to read.
-   * @param recordcount
-   *          The number of records to read
-   * @param fields
-   *          The list of fields to read, or null for all of them
-   * @param result
-   *          A Vector of HashMaps, where each HashMap is a set field/value
-   *          pairs for one record
+   * @param table       The name of the table
+   * @param startkey    The record key of the first record to read.
+   * @param recordcount The number of records to read
+   * @param fields      The list of fields to read, or null for all of them
+   * @param result      A Vector of HashMaps, where each HashMap is a set field/value
+   *                    pairs for one record
    * @return Zero on success, a non-zero error code on error
    */
   @Override
@@ -420,12 +414,9 @@ public class CassandraCQLClient extends DB {
    * values HashMap will be written into the record with the specified record
    * key, overwriting any existing values with the same field name.
    *
-   * @param table
-   *          The name of the table
-   * @param key
-   *          The record key of the record to write.
-   * @param values
-   *          A HashMap of field/value pairs to update in the record
+   * @param table  The name of the table
+   * @param key    The record key of the record to write.
+   * @param values A HashMap of field/value pairs to update in the record
    * @return Zero on success, a non-zero error code on error
    */
   @Override
@@ -440,12 +431,9 @@ public class CassandraCQLClient extends DB {
    * values HashMap will be written into the record with the specified record
    * key.
    *
-   * @param table
-   *          The name of the table
-   * @param key
-   *          The record key of the record to insert.
-   * @param values
-   *          A HashMap of field/value pairs to insert in the record
+   * @param table  The name of the table
+   * @param key    The record key of the record to insert.
+   * @param values A HashMap of field/value pairs to insert in the record
    * @return Zero on success, a non-zero error code on error
    */
   @Override
@@ -496,10 +484,8 @@ public class CassandraCQLClient extends DB {
   /**
    * Delete a record from the database.
    *
-   * @param table
-   *          The name of the table
-   * @param key
-   *          The record key of the record to delete.
+   * @param table The name of the table
+   * @param key   The record key of the record to delete.
    * @return Zero on success, a non-zero error code on error
    */
   @Override
