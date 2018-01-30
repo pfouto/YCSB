@@ -186,11 +186,12 @@ public class CassandraCQLClient extends DB {
         System.err.printf("Connected to cluster: %s\n",
             metadata.getClusterName());
 
+        /*
         for (Host discoveredHost : metadata.getAllHosts()) {
           System.out.printf("Datacenter: %s; Host: %s; Rack: %s\n",
               discoveredHost.getDatacenter(), discoveredHost.getAddress(),
               discoveredHost.getRack());
-        }
+        }*/
 
         session = cluster.connect();
 

@@ -688,6 +688,7 @@ public final class Client {
       double throughput = 1000.0 * (opcount) / (runtime);
       exporter.write("OVERALL", "Throughput(ops/sec)", throughput);
 
+      /*
       final Map<String, Long[]> gcs = Utils.getGCStatst();
       long totalGCCount = 0;
       long totalGCTime = 0;
@@ -713,6 +714,7 @@ public final class Client {
       }
 
       Measurements.getMeasurements().exportMeasurements(exporter);
+      */
     } finally {
       if (exporter != null) {
         exporter.close();
