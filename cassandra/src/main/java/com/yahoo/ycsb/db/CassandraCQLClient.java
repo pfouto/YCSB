@@ -302,6 +302,7 @@ public class CassandraCQLClient extends DB {
     } catch (Exception e) {
       e.printStackTrace();
       System.out.println("Error reading key: " + key);
+      System.exit(1);
       return Status.ERROR;
     }
 
@@ -397,6 +398,7 @@ public class CassandraCQLClient extends DB {
     } catch (Exception e) {
       e.printStackTrace();
       System.out.println("Error scanning with startkey: " + startkey);
+      System.exit(1);
       return Status.ERROR;
     }
 
@@ -469,6 +471,7 @@ public class CassandraCQLClient extends DB {
       return Status.OK;
     } catch (Exception e) {
       e.printStackTrace();
+      System.exit(1);
     }
 
     return Status.ERROR;
@@ -510,6 +513,7 @@ public class CassandraCQLClient extends DB {
     } catch (Exception e) {
       e.printStackTrace();
       System.out.println("Error deleting key: " + key);
+      System.exit(1);
     }
 
     return Status.ERROR;
