@@ -94,7 +94,7 @@ public class CassandraCQLClient extends DB {
 
   private static boolean trace = false;
 
-  private static Map<Thread, KeyspaceManager> keyspaceManagerMap = new HashMap<>();
+  private static Map<Thread, KeyspaceManager> keyspaceManagerMap = new ConcurrentHashMap<>();
 
 
   /**
