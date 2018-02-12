@@ -295,7 +295,7 @@ public class CassandraCQLClient extends DB {
         }
       }
 
-      keyspaceManager.opDone(timeTaken);
+      keyspaceManager.opDone(timeTaken, "read");
 
       return Status.OK;
 
@@ -391,7 +391,7 @@ public class CassandraCQLClient extends DB {
 
         result.add(tuple);
       }
-      keyspaceManager.opDone(timeTaken);
+      keyspaceManager.opDone(timeTaken, "scan");
 
       return Status.OK;
 
@@ -466,7 +466,7 @@ public class CassandraCQLClient extends DB {
       session.execute(insertStmt);
       long timeTaken = System.nanoTime() - startTime;
 
-      keyspaceManager.opDone(timeTaken);
+      keyspaceManager.opDone(timeTaken, "insert");
 
       return Status.OK;
     } catch (Exception e) {
@@ -508,7 +508,7 @@ public class CassandraCQLClient extends DB {
       session.execute(stmt);
       long timeTaken = System.nanoTime() - startTime;
 
-      keyspaceManager.opDone(timeTaken);
+      keyspaceManager.opDone(timeTaken, "delete");
       return Status.OK;
     } catch (Exception e) {
       e.printStackTrace();

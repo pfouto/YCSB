@@ -69,11 +69,11 @@ public class KeyspaceManager {
     return currentKeyspace;
   }
 
-  public void opDone(long nanosTaken){
+  public void opDone(long nanosTaken, String type){
     if(!running)
       return;
 
-    allOps.add(new AbstractMap.SimpleImmutableEntry<String, Long>(local ? "local" : "remote", nanosTaken));
+    allOps.add(new AbstractMap.SimpleImmutableEntry<>((local ? "local" : "remote")+"-"+type, nanosTaken));
 
   }
 
