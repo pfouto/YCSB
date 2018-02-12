@@ -1,7 +1,5 @@
 package com.yahoo.ycsb.db;
 
-import com.sun.xml.internal.xsom.impl.scd.Iterators;
-
 import java.util.*;
 
 import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
@@ -33,7 +31,7 @@ public class KeyspaceManager {
 
   private boolean running;
 
-  List<Map.Entry<String, Long>> allOps;
+  private List<Map.Entry<String, Long>> allOps;
 
   KeyspaceManager(Properties properties){
     localKeyspaces = properties.getProperty(LOCAL_KEYSPACES_PROPERTY).split("\\s+");

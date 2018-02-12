@@ -1,10 +1,5 @@
-hosts=10.10.0.4
 cassandra.readconsistencylevel=QUORUM
 cassandra.writeconsistencylevel=QUORUM
 cassandra.readtimeoutmillis=15000
 cassandra.locallambda=95
 cassandra.remotelambda=5
-cassandra.localkeyspaces=
-cassandra.remotekeyspaces=
-
-cassandra.mainkeyspace=
