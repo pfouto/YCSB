@@ -846,6 +846,7 @@ public final class Client {
       System.exit(-1);
     }
 
+    System.err.println("Done!");
     System.exit(0);
   }
 
