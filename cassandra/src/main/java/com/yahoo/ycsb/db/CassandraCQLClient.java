@@ -28,6 +28,8 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.exceptions.ReadTimeoutException;
+import com.datastax.driver.core.exceptions.WriteTimeoutException;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
@@ -299,9 +301,11 @@ public class CassandraCQLClient extends DB {
 
       return Status.OK;
 
+    } catch (ReadTimeoutException e) {
+      System.err.println("Timeout reading key: " + key);
+      return Status.ERROR;
     } catch (Exception e) {
       e.printStackTrace();
-      System.out.println("Error reading key: " + key);
       System.exit(1);
       return Status.ERROR;
     }
@@ -469,6 +473,9 @@ public class CassandraCQLClient extends DB {
       keyspaceManager.opDone(timeTaken, "insert");
 
       return Status.OK;
+    } catch (WriteTimeoutException e) {
+      System.err.println("Timeout writing key: " + key);
+      return Status.ERROR;
     } catch (Exception e) {
       e.printStackTrace();
       System.exit(1);
