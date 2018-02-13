@@ -92,6 +92,7 @@ public class CassandraCQLClient extends DB {
    * {@link #cleanup()}.
    */
   private static final AtomicInteger INIT_COUNT = new AtomicInteger(0);
+  private static final AtomicInteger timeouts = new AtomicInteger(0);
 
   private static boolean debug = false;
 
@@ -221,6 +222,7 @@ public class CassandraCQLClient extends DB {
           System.out.println(e.getKey() + ":" + e.getValue());
         }
       }
+      System.out.println("[Timeouts] " + timeouts.get());
 
       final int curInitCount = INIT_COUNT.decrementAndGet();
       if (curInitCount <= 0) {
@@ -303,6 +305,7 @@ public class CassandraCQLClient extends DB {
       return Status.OK;
 
     } catch (ReadTimeoutException | NoHostAvailableException e) {
+      timeouts.incrementAndGet();
       System.err.println("Timeout reading key: " + e);
       return Status.ERROR;
     } catch (Exception e) {
@@ -476,6 +479,7 @@ public class CassandraCQLClient extends DB {
       return Status.OK;
     } catch (WriteTimeoutException | NoHostAvailableException e) {
       System.err.println("Timeout writing key: " + e);
+      timeouts.incrementAndGet();
       return Status.ERROR;
     } catch (Exception e) {
       e.printStackTrace();
