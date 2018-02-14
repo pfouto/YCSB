@@ -306,7 +306,7 @@ public class CassandraCQLClient extends DB {
 
     } catch (ReadTimeoutException | NoHostAvailableException e) {
       timeouts.incrementAndGet();
-      System.err.println("Timeout reading key: " + e);
+      System.err.println("[" + keyspaceManager.getMainKeyspace() + " -> " + keyspaceManager.getCurrentKeyspace() + "] " + "Timeout reading key: " + e);
       return Status.ERROR;
     } catch (Exception e) {
       e.printStackTrace();
@@ -478,7 +478,7 @@ public class CassandraCQLClient extends DB {
 
       return Status.OK;
     } catch (WriteTimeoutException | NoHostAvailableException e) {
-      System.err.println("Timeout writing key: " + e);
+      System.err.println("[" + keyspaceManager.getMainKeyspace() + " -> " + keyspaceManager.getCurrentKeyspace() + "] " + "Timeout writing key: " + e);
       timeouts.incrementAndGet();
       return Status.ERROR;
     } catch (Exception e) {

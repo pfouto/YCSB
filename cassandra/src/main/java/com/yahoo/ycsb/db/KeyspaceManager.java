@@ -75,6 +75,14 @@ public class KeyspaceManager {
 
   }
 
+  public String getCurrentKeyspace() {
+    return currentKeyspace;
+  }
+
+  public String getMainKeyspace() {
+    return mainKeyspace;
+  }
+
   private String getRandomKeyspace(boolean local) {
     if(local)
       return localKeyspaces[r.nextInt(localKeyspaces.length)];
