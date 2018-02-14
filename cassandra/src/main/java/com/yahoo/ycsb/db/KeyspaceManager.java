@@ -76,7 +76,7 @@ public class KeyspaceManager {
     if(!running)
       return;
 
-    allOps.add(new AbstractMap.SimpleImmutableEntry<>((local ? "local" : "remote")+"-"+type, nanosTaken));
+    allOps.add(new AbstractMap.SimpleImmutableEntry<>((local ? "l" : "r")+"-"+type, nanosTaken));
 
   }
 
