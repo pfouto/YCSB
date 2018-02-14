@@ -61,7 +61,12 @@ public class KeyspaceManager {
     if (currentSequenceOp >= nSequenceOps) {
       local = !local;
       currentKeyspace = getRandomKeyspace(local);
-      nSequenceOps = getPoisson(local);
+      if(nSequenceOps == -1){
+        nSequenceOps = getPoisson(local);
+        nSequenceOps = r.nextInt(nSequenceOps);
+      } else {
+        nSequenceOps = getPoisson(local);
+      }
       currentSequenceOp = 0;
     }
     return currentKeyspace;
