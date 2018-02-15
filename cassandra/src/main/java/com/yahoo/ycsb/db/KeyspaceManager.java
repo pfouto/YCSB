@@ -52,6 +52,7 @@ public class KeyspaceManager {
     currentSequenceOp = 0;
     nSequenceOps = getPoisson(true);
     nSequenceOps = r.nextInt(nSequenceOps);
+    currentKeyspace = getRandomKeyspace(local);
 
     allOps = new LinkedList<>();
   }
