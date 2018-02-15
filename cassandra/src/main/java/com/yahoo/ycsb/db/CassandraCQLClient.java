@@ -189,7 +189,6 @@ public class CassandraCQLClient extends DB {
         System.err.printf("Connected to cluster: %s\n",
             metadata.getClusterName());
         System.err.println(metadata.getKeyspace("euw").getReplication());
-        System.exit(0);
         /*
         for (Host discoveredHost : metadata.getAllHosts()) {
           System.out.printf("Datacenter: %s; Host: %s; Rack: %s\n",
