@@ -2,6 +2,7 @@ package com.yahoo.ycsb.db;
 
 import java.net.InetAddress;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
 
@@ -93,7 +94,7 @@ public class KeyspaceManager {
             InetAddress.getLocalHost(), -1, System.currentTimeMillis());
         ConnectionManager.getConnectionToHigh(InetAddress.getByName(CassandraCQLClient.addresses.get(currentDc))).writeAndFlush(mm);
 
-        MigrateMessage take = CassandraCQLClient.migrateResponses.get(Thread.currentThread().getId()).take();
+        MigrateMessage take = CassandraCQLClient.migrateResponses.get(Thread.currentThread().getId()).poll(120, TimeUnit.SECONDS);
         long timeTaken = System.nanoTime() - startTime;
 
         currentDc = take.getPossibleDatacenters().get(0);
