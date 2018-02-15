@@ -4,3 +4,4 @@ cassandra.writeconsistencylevel=ANY_QUORUM
 cassandra.readtimeoutmillis=120000
 cassandra.locallambda=95
 cassandra.remotelambda=5
+cassandra.migrate=true

@@ -9,12 +9,11 @@ import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
 
 public class KeyspaceManager {
 
-  boolean migrate = true;
-
   private static final String LOCAL_LAMBDA_PROPERTY = "cassandra.locallambda";
   private static final String REMOTE_LAMBDA_PROPERTY = "cassandra.remotelambda";
   private static final String LOCAL_KEYSPACES_PROPERTY = "cassandra.localkeyspaces";
   private static final String REMOTE_KEYSPACES_PROPERTY = "cassandra.remotekeyspaces";
+  private static final String MIGRATE_PROPERTY = "cassandra.migrate";
 
   private static final String MAIN_KEYSPACE_PROPERTY = "cassandra.mainkeyspace";
 
@@ -37,12 +36,15 @@ public class KeyspaceManager {
 
   private boolean running;
 
+  private boolean migrate;
+
   private List<Map.Entry<String, Long>> allOps;
 
   KeyspaceManager(Properties properties) {
     localKeyspaces = properties.getProperty(LOCAL_KEYSPACES_PROPERTY).split("\\s+");
     remoteKeyspaces = properties.getProperty(REMOTE_KEYSPACES_PROPERTY).split("\\s+");
     mainKeyspace = properties.getProperty(MAIN_KEYSPACE_PROPERTY);
+    migrate = Boolean.valueOf(properties.getProperty(MIGRATE_PROPERTY));
 
     currentDc = mainKeyspace;
 
