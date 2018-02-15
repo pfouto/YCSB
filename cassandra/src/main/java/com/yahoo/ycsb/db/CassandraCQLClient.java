@@ -17,38 +17,20 @@
  */
 package com.yahoo.ycsb.db;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ColumnDefinitions;
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.HostDistance;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
 import com.datastax.driver.core.exceptions.WriteTimeoutException;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import com.yahoo.ycsb.ByteArrayByteIterator;
-import com.yahoo.ycsb.ByteIterator;
-import com.yahoo.ycsb.DB;
-import com.yahoo.ycsb.DBException;
-import com.yahoo.ycsb.Status;
+import com.yahoo.ycsb.*;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
@@ -61,9 +43,6 @@ import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
  * @author cmatser
  */
 public class CassandraCQLClient extends DB {
-
-  private static Cluster cluster = null;
-  private static Session session = null;
 
   private static ConsistencyLevel readConsistencyLevel = ConsistencyLevel.ONE;
   private static ConsistencyLevel writeConsistencyLevel = ConsistencyLevel.ONE;
@@ -100,8 +79,12 @@ public class CassandraCQLClient extends DB {
 
   private static boolean trace = false;
 
-  private static Map<Thread, KeyspaceManager> keyspaceManagerMap = new ConcurrentHashMap<>();
+  private static Map<Long, KeyspaceManager> keyspaceManagerMap = new ConcurrentHashMap<>();
 
+  public static Map<String, Cluster> clusters = null;
+  private static Map<String, Session> sessions = null;
+  public static Map<String, String> addresses = null;
+  public static Map<Long, BlockingQueue<MigrateMessage>> migrateResponses = new HashMap<>();
 
   /**
    * Initialize any state for this DB. Called once per DB instance; there is one
@@ -117,14 +100,21 @@ public class CassandraCQLClient extends DB {
     // cluster/session instance for all the threads.
     synchronized (INIT_COUNT) {
 
-      keyspaceManagerMap.put(Thread.currentThread(), new KeyspaceManager(getProperties()));
+      keyspaceManagerMap.put(Thread.currentThread().getId(), new KeyspaceManager(getProperties()));
+      migrateResponses.put(Thread.currentThread().getId(), new LinkedBlockingQueue<>());
 
       // Check if the cluster has already been initialized
-      if (cluster != null) {
+      if (clusters != null) {
         return;
       }
 
       try {
+
+        ConnectionManager.init();
+
+        clusters = new ConcurrentHashMap<>();
+        sessions = new ConcurrentHashMap<>();
+        addresses = new ConcurrentHashMap<>();
 
         debug =
             Boolean.parseBoolean(getProperties().getProperty("debug", "false"));
@@ -137,60 +127,70 @@ public class CassandraCQLClient extends DB {
               HOSTS_PROPERTY));
         }
         String[] hosts = host.split(",");
-        String port = getProperties().getProperty(PORT_PROPERTY, PORT_PROPERTY_DEFAULT);
 
-        String username = getProperties().getProperty(USERNAME_PROPERTY);
-        String password = getProperties().getProperty(PASSWORD_PROPERTY);
+        for (String dcHost : hosts) {
 
-        readConsistencyLevel = ConsistencyLevel.valueOf(
-            getProperties().getProperty(READ_CONSISTENCY_LEVEL_PROPERTY,
-                READ_CONSISTENCY_LEVEL_PROPERTY_DEFAULT));
-        writeConsistencyLevel = ConsistencyLevel.valueOf(
-            getProperties().getProperty(WRITE_CONSISTENCY_LEVEL_PROPERTY,
-                WRITE_CONSISTENCY_LEVEL_PROPERTY_DEFAULT));
+          String[] split = dcHost.split(":");
+          String dcName = split[0];
+          String dcAddr = split[1];
 
-        if ((username != null) && !username.isEmpty()) {
-          cluster = Cluster.builder().withCredentials(username, password)
-              .withPort(Integer.valueOf(port)).addContactPoints(hosts).build();
-        } else {
-          cluster = Cluster.builder().withPort(Integer.valueOf(port))
-              .addContactPoints(hosts).build();
-        }
+          addresses.put(dcName, dcAddr);
 
-        String maxConnections = getProperties().getProperty(
-            MAX_CONNECTIONS_PROPERTY);
-        if (maxConnections != null) {
-          cluster.getConfiguration().getPoolingOptions()
-              .setMaxConnectionsPerHost(HostDistance.LOCAL,
-                  Integer.valueOf(maxConnections));
-        }
+          String port = getProperties().getProperty(PORT_PROPERTY, PORT_PROPERTY_DEFAULT);
 
-        String coreConnections = getProperties().getProperty(
-            CORE_CONNECTIONS_PROPERTY);
-        if (coreConnections != null) {
-          cluster.getConfiguration().getPoolingOptions()
-              .setCoreConnectionsPerHost(HostDistance.LOCAL,
-                  Integer.valueOf(coreConnections));
-        }
+          String username = getProperties().getProperty(USERNAME_PROPERTY);
+          String password = getProperties().getProperty(PASSWORD_PROPERTY);
 
-        String connectTimoutMillis = getProperties().getProperty(
-            CONNECT_TIMEOUT_MILLIS_PROPERTY);
-        if (connectTimoutMillis != null) {
-          cluster.getConfiguration().getSocketOptions()
-              .setConnectTimeoutMillis(Integer.valueOf(connectTimoutMillis));
-        }
+          readConsistencyLevel = ConsistencyLevel.valueOf(
+              getProperties().getProperty(READ_CONSISTENCY_LEVEL_PROPERTY,
+                  READ_CONSISTENCY_LEVEL_PROPERTY_DEFAULT));
+          writeConsistencyLevel = ConsistencyLevel.valueOf(
+              getProperties().getProperty(WRITE_CONSISTENCY_LEVEL_PROPERTY,
+                  WRITE_CONSISTENCY_LEVEL_PROPERTY_DEFAULT));
 
-        String readTimoutMillis = getProperties().getProperty(
-            READ_TIMEOUT_MILLIS_PROPERTY);
-        if (readTimoutMillis != null) {
-          cluster.getConfiguration().getSocketOptions()
-              .setReadTimeoutMillis(Integer.valueOf(readTimoutMillis));
-        }
+          Cluster cluster;
+          if ((username != null) && !username.isEmpty()) {
+            cluster = Cluster.builder().withCredentials(username, password)
+                .withPort(Integer.valueOf(port)).addContactPoint(dcAddr).build();
+          } else {
+            cluster = Cluster.builder().withPort(Integer.valueOf(port))
+                .addContactPoint(dcAddr).build();
+          }
 
-        Metadata metadata = cluster.getMetadata();
-        System.err.printf("Connected to cluster: %s\n",
-            metadata.getClusterName());
-        System.err.println(metadata.getKeyspace("euw").getReplication());
+          String maxConnections = getProperties().getProperty(
+              MAX_CONNECTIONS_PROPERTY);
+          if (maxConnections != null) {
+            cluster.getConfiguration().getPoolingOptions()
+                .setMaxConnectionsPerHost(HostDistance.LOCAL,
+                    Integer.valueOf(maxConnections));
+          }
+
+          String coreConnections = getProperties().getProperty(
+              CORE_CONNECTIONS_PROPERTY);
+          if (coreConnections != null) {
+            cluster.getConfiguration().getPoolingOptions()
+                .setCoreConnectionsPerHost(HostDistance.LOCAL,
+                    Integer.valueOf(coreConnections));
+          }
+
+          String connectTimoutMillis = getProperties().getProperty(
+              CONNECT_TIMEOUT_MILLIS_PROPERTY);
+          if (connectTimoutMillis != null) {
+            cluster.getConfiguration().getSocketOptions()
+                .setConnectTimeoutMillis(Integer.valueOf(connectTimoutMillis));
+          }
+
+          String readTimoutMillis = getProperties().getProperty(
+              READ_TIMEOUT_MILLIS_PROPERTY);
+          if (readTimoutMillis != null) {
+            cluster.getConfiguration().getSocketOptions()
+                .setReadTimeoutMillis(Integer.valueOf(readTimoutMillis));
+          }
+
+          Metadata metadata = cluster.getMetadata();
+          System.err.printf("Connected to cluster: %s\n",
+              metadata.getClusterName());
+          System.err.println(metadata.getKeyspace("euw").getReplication());
         /*
         for (Host discoveredHost : metadata.getAllHosts()) {
           System.out.printf("Datacenter: %s; Host: %s; Rack: %s\n",
@@ -198,7 +198,11 @@ public class CassandraCQLClient extends DB {
               discoveredHost.getRack());
         }*/
 
-        session = cluster.connect();
+          Session session = cluster.connect();
+
+          clusters.put(dcName, cluster);
+          sessions.put(dcName, session);
+        }
 
       } catch (Exception e) {
         throw new DBException(e);
@@ -218,7 +222,7 @@ public class CassandraCQLClient extends DB {
       if (Boolean.valueOf(getProperties().getProperty(DO_TRANSACTIONS_PROPERTY))) {
 
 
-        List<Map.Entry<String, Long>> allOps = keyspaceManagerMap.get(Thread.currentThread()).getAllOps();
+        List<Map.Entry<String, Long>> allOps = keyspaceManagerMap.get(Thread.currentThread().getId()).getAllOps();
         System.out.println("[Client] " + Thread.currentThread().toString() + " " + allOps.size());
         for (Map.Entry<String, Long> e : allOps) {
           System.out.println(e.getKey() + ":" + e.getValue());
@@ -228,10 +232,13 @@ public class CassandraCQLClient extends DB {
 
       final int curInitCount = INIT_COUNT.decrementAndGet();
       if (curInitCount <= 0) {
-        session.close();
-        cluster.close();
-        cluster = null;
-        session = null;
+        for(Session s : sessions.values()) {
+          s.close();
+        }
+
+        for (Cluster c : clusters.values()) {
+          c.close();
+        }
       }
       if (curInitCount < 0) {
         // This should never happen.
@@ -255,7 +262,7 @@ public class CassandraCQLClient extends DB {
   public Status read(String table, String key, Set<String> fields,
                      Map<String, ByteIterator> result) {
 
-    KeyspaceManager keyspaceManager = keyspaceManagerMap.get(Thread.currentThread());
+    KeyspaceManager keyspaceManager = keyspaceManagerMap.get(Thread.currentThread().getId());
     String keyspace = keyspaceManager.nextOpKeyspace();
     try {
       Statement stmt;
@@ -282,7 +289,7 @@ public class CassandraCQLClient extends DB {
       }
 
       long startTime = System.nanoTime();
-      ResultSet rs = session.execute(stmt);
+      ResultSet rs = sessions.get(keyspaceManager.currentDc).execute(stmt);
       long timeTaken = System.nanoTime() - startTime;
 
       if (rs.isExhausted()) {
@@ -337,7 +344,7 @@ public class CassandraCQLClient extends DB {
   public Status scan(String table, String startkey, int recordcount,
                      Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
 
-    KeyspaceManager keyspaceManager = keyspaceManagerMap.get(Thread.currentThread());
+    KeyspaceManager keyspaceManager = keyspaceManagerMap.get(Thread.currentThread().getId());
     String keyspace = keyspaceManager.nextOpKeyspace();
 
     try {
@@ -380,7 +387,7 @@ public class CassandraCQLClient extends DB {
       }
 
       long startTime = System.nanoTime();
-      ResultSet rs = session.execute(stmt);
+      ResultSet rs = sessions.get(keyspaceManager.currentDc).execute(stmt);
       long timeTaken = System.nanoTime() - startTime;
 
       HashMap<String, ByteIterator> tuple;
@@ -445,7 +452,7 @@ public class CassandraCQLClient extends DB {
   public Status insert(String table, String key,
                        Map<String, ByteIterator> values) {
 
-    KeyspaceManager keyspaceManager = keyspaceManagerMap.get(Thread.currentThread());
+    KeyspaceManager keyspaceManager = keyspaceManagerMap.get(Thread.currentThread().getId());
     String keyspace = keyspaceManager.nextOpKeyspace();
 
     try {
@@ -473,10 +480,7 @@ public class CassandraCQLClient extends DB {
       }
 
       long startTime = System.nanoTime();
-      ResultSet execute = session.execute(insertStmt);
-      if(!execute.getExecutionInfo().getQueriedHost().getAddress().equals(InetAddress.getByName("10.10.0.4"))){
-        System.err.println(execute.getExecutionInfo().getQueriedHost());
-      }
+      sessions.get(keyspaceManager.currentDc).execute(insertStmt);
       long timeTaken = System.nanoTime() - startTime;
 
       keyspaceManager.opDone(timeTaken, "i");
@@ -504,7 +508,7 @@ public class CassandraCQLClient extends DB {
   @Override
   public Status delete(String table, String key) {
 
-    KeyspaceManager keyspaceManager = keyspaceManagerMap.get(Thread.currentThread());
+    KeyspaceManager keyspaceManager = keyspaceManagerMap.get(Thread.currentThread().getId());
     String keyspace = keyspaceManager.nextOpKeyspace();
 
     try {
@@ -522,7 +526,7 @@ public class CassandraCQLClient extends DB {
       }
 
       long startTime = System.nanoTime();
-      session.execute(stmt);
+      sessions.get(keyspaceManager.currentDc).execute(stmt);
       long timeTaken = System.nanoTime() - startTime;
 
       keyspaceManager.opDone(timeTaken, "d");

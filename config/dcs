@@ -1,4 +1,3 @@
-hosts=
 cassandra.localkeyspaces=
 cassandra.remotekeyspaces=
 cassandra.mainkeyspace=

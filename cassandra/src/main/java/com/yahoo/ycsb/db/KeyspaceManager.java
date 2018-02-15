@@ -1,5 +1,6 @@
 package com.yahoo.ycsb.db;
 
+import java.net.InetAddress;
 import java.util.*;
 
 import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
@@ -27,31 +28,36 @@ public class KeyspaceManager {
   private boolean local;
   private String currentKeyspace;
 
+  public String currentDc;
+
   private static Random r = new Random();
 
   private boolean running;
 
   private List<Map.Entry<String, Long>> allOps;
 
-  KeyspaceManager(Properties properties){
+  KeyspaceManager(Properties properties) {
     localKeyspaces = properties.getProperty(LOCAL_KEYSPACES_PROPERTY).split("\\s+");
     remoteKeyspaces = properties.getProperty(REMOTE_KEYSPACES_PROPERTY).split("\\s+");
     mainKeyspace = properties.getProperty(MAIN_KEYSPACE_PROPERTY);
+
+    currentDc = mainKeyspace;
 
     localLambda = Integer.valueOf(properties.getProperty(LOCAL_LAMBDA_PROPERTY));
     remoteLambda = Integer.valueOf(properties.getProperty(REMOTE_LAMBDA_PROPERTY));
 
     running = Boolean.valueOf(properties.getProperty(DO_TRANSACTIONS_PROPERTY));
 
-    local = false;
+    local = true;
     currentSequenceOp = 0;
-    nSequenceOps = -1;
+    nSequenceOps = getPoisson(true);
+    nSequenceOps = r.nextInt(nSequenceOps);
 
     allOps = new LinkedList<>();
   }
 
-  public String nextOpKeyspace(){
-    if(!running){
+  public String nextOpKeyspace() {
+    if (!running) {
       return mainKeyspace;
     }
 
@@ -61,22 +67,57 @@ public class KeyspaceManager {
     if (currentSequenceOp >= nSequenceOps) {
       local = !local;
       currentKeyspace = getRandomKeyspace(local);
-      if(nSequenceOps == -1){
-        nSequenceOps = getPoisson(local);
-        nSequenceOps = r.nextInt(nSequenceOps);
-      } else {
-        nSequenceOps = getPoisson(local);
-      }
+      nSequenceOps = getPoisson(local);
       currentSequenceOp = 0;
+
+      //migrate to relevant...
+      List<String> possibleDcs = new LinkedList<>();
+      if (local) {
+        possibleDcs.add(mainKeyspace);
+      } else {
+        //todo find dcs that replicate new keyspace
+        Map<String, String> replication = CassandraCQLClient.clusters.get(currentDc).getMetadata().getKeyspace(currentKeyspace).getReplication();
+        for(String dc : replication.keySet()){
+          if(CassandraCQLClient.clusters.containsKey(dc))
+            possibleDcs.add(dc);
+        }
+      }
+
+      System.err.println("migrating to ks: " + currentKeyspace + " from dc " + currentDc);
+      System.err.println("possible dcs: " + possibleDcs);
+
+      try {
+        long startTime = System.nanoTime();
+        MigrateMessage mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, null,
+            InetAddress.getLocalHost(), -1, System.currentTimeMillis());
+        ConnectionManager.getConnectionToHigh(InetAddress.getByName(CassandraCQLClient.addresses.get(currentDc))).writeAndFlush(mm);
+
+        MigrateMessage take = CassandraCQLClient.migrateResponses.get(Thread.currentThread().getId()).take();
+        long timeTaken = System.nanoTime() - startTime;
+
+        currentDc = take.getPossibleDatacenters().get(0);
+        allOps.add(new AbstractMap.SimpleImmutableEntry<>("m", timeTaken));
+
+        System.err.println("Migrated to: " + currentDc);
+
+
+      } catch (Exception e) {
+        System.err.println("Exception migrating... " + e);
+        System.out.println("Exception migrating... " + e);
+        System.exit(1);
+      }
+
+
     }
+
     return currentKeyspace;
   }
 
-  public void opDone(long nanosTaken, String type){
-    if(!running)
+  public void opDone(long nanosTaken, String type) {
+    if (!running)
       return;
 
-    allOps.add(new AbstractMap.SimpleImmutableEntry<>((local ? "l" : "r")+"-"+type, nanosTaken));
+    allOps.add(new AbstractMap.SimpleImmutableEntry<>((local ? "l" : "r") + "-" + type, nanosTaken));
 
   }
 
@@ -89,7 +130,7 @@ public class KeyspaceManager {
   }
 
   private String getRandomKeyspace(boolean local) {
-    if(local)
+    if (local)
       return localKeyspaces[r.nextInt(localKeyspaces.length)];
     else
       return remoteKeyspaces[r.nextInt(remoteKeyspaces.length)];
