@@ -188,7 +188,7 @@ public class CassandraCQLClient extends DB {
         Metadata metadata = cluster.getMetadata();
         System.err.printf("Connected to cluster: %s\n",
             metadata.getClusterName());
-        System.err.println(metadata.getAllHosts());
+        System.err.println(metadata.getKeyspace("euw").getReplication());
         System.exit(0);
         /*
         for (Host discoveredHost : metadata.getAllHosts()) {
