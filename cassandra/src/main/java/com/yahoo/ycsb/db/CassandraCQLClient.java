@@ -44,6 +44,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -472,7 +474,9 @@ public class CassandraCQLClient extends DB {
 
       long startTime = System.nanoTime();
       ResultSet execute = session.execute(insertStmt);
-      System.err.println(execute.getExecutionInfo().getQueriedHost());
+      if(!execute.getExecutionInfo().getQueriedHost().getAddress().equals(InetAddress.getByName("10.10.0.4"))){
+        System.err.println(execute.getExecutionInfo().getQueriedHost());
+      }
       long timeTaken = System.nanoTime() - startTime;
 
       keyspaceManager.opDone(timeTaken, "i");
