@@ -85,8 +85,8 @@ public class KeyspaceManager {
         }
       }
 
-      System.err.println("migrating to ks: " + currentKeyspace + " from dc " + currentDc);
-      System.err.println("possible dcs: " + possibleDcs);
+      //System.err.println("migrating to ks: " + currentKeyspace + " from dc " + currentDc);
+      //System.err.println("possible dcs: " + possibleDcs);
 
       try {
         long startTime = System.nanoTime();
@@ -100,7 +100,7 @@ public class KeyspaceManager {
         currentDc = take.getPossibleDatacenters().get(0);
         allOps.add(new AbstractMap.SimpleImmutableEntry<>("m", timeTaken));
 
-        System.err.println("Migrated to: " + currentDc);
+        //System.err.println("Migrated to: " + currentDc);
 
 
       } catch (Exception e) {
