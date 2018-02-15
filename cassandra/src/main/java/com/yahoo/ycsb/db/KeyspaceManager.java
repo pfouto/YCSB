@@ -72,6 +72,8 @@ public class KeyspaceManager {
       nSequenceOps = getPoisson(local);
       currentSequenceOp = 0;
 
+
+      /*
       //migrate to relevant...
       List<String> possibleDcs = new LinkedList<>();
       if (local) {
@@ -109,7 +111,7 @@ public class KeyspaceManager {
         System.exit(1);
       }
 
-
+      */
     }
 
     return currentKeyspace;
