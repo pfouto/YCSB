@@ -472,7 +472,8 @@ public class CassandraCQLClient extends DB {
       }
 
       long startTime = System.nanoTime();
-      session.execute(insertStmt);
+      ResultSet execute = session.execute(insertStmt);
+      System.err.println(execute.getExecutionInfo().getQueriedHost());
       long timeTaken = System.nanoTime() - startTime;
 
       keyspaceManager.opDone(timeTaken, "i");
