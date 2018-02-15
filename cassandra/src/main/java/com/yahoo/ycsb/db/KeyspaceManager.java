@@ -13,7 +13,7 @@ public class KeyspaceManager {
   private static final String REMOTE_LAMBDA_PROPERTY = "cassandra.remotelambda";
   private static final String LOCAL_KEYSPACES_PROPERTY = "cassandra.localkeyspaces";
   private static final String REMOTE_KEYSPACES_PROPERTY = "cassandra.remotekeyspaces";
-  private static final String MIGRATE_PROPERTY = "cassandra.migrate";
+  private static final String MIGRATE_PROPERTY = "migrate";
 
   private static final String MAIN_KEYSPACE_PROPERTY = "cassandra.mainkeyspace";
 
