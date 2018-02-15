@@ -9,6 +9,8 @@ import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
 
 public class KeyspaceManager {
 
+  boolean migrate = true;
+
   private static final String LOCAL_LAMBDA_PROPERTY = "cassandra.locallambda";
   private static final String REMOTE_LAMBDA_PROPERTY = "cassandra.remotelambda";
   private static final String LOCAL_KEYSPACES_PROPERTY = "cassandra.localkeyspaces";
@@ -73,45 +75,45 @@ public class KeyspaceManager {
       currentSequenceOp = 0;
 
 
-      /*
-      //migrate to relevant...
-      List<String> possibleDcs = new LinkedList<>();
-      if (local) {
-        possibleDcs.add(mainKeyspace);
-      } else {
-        //todo find dcs that replicate new keyspace
-        Map<String, String> replication = CassandraCQLClient.clusters.get(currentDc).getMetadata().getKeyspace(currentKeyspace).getReplication();
-        for(String dc : replication.keySet()){
-          if(CassandraCQLClient.clusters.containsKey(dc))
-            possibleDcs.add(dc);
+      if(migrate) {
+        //migrate to relevant...
+        List<String> possibleDcs = new LinkedList<>();
+        if (local) {
+          possibleDcs.add(mainKeyspace);
+        } else {
+          //todo find dcs that replicate new keyspace
+          Map<String, String> replication = CassandraCQLClient.clusters.get(currentDc).getMetadata().getKeyspace(currentKeyspace).getReplication();
+          for (String dc : replication.keySet()) {
+            if (CassandraCQLClient.clusters.containsKey(dc))
+              possibleDcs.add(dc);
+          }
         }
+
+        //System.err.println("migrating to ks: " + currentKeyspace + " from dc " + currentDc);
+        //System.err.println("possible dcs: " + possibleDcs);
+
+        try {
+          long startTime = System.nanoTime();
+          MigrateMessage mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, null,
+              InetAddress.getLocalHost(), -1, System.currentTimeMillis());
+          ConnectionManager.getConnectionToHigh(InetAddress.getByName(CassandraCQLClient.addresses.get(currentDc))).writeAndFlush(mm);
+
+          MigrateMessage take = CassandraCQLClient.migrateResponses.get(Thread.currentThread().getId()).poll(120, TimeUnit.SECONDS);
+          long timeTaken = System.nanoTime() - startTime;
+
+          currentDc = take.getPossibleDatacenters().get(0);
+          allOps.add(new AbstractMap.SimpleImmutableEntry<>("m", timeTaken));
+
+          //System.err.println("Migrated to: " + currentDc);
+
+
+        } catch (Exception e) {
+          System.err.println("Exception migrating... " + e);
+          System.out.println("Exception migrating... " + e);
+          System.exit(1);
+        }
+
       }
-
-      //System.err.println("migrating to ks: " + currentKeyspace + " from dc " + currentDc);
-      //System.err.println("possible dcs: " + possibleDcs);
-
-      try {
-        long startTime = System.nanoTime();
-        MigrateMessage mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, null,
-            InetAddress.getLocalHost(), -1, System.currentTimeMillis());
-        ConnectionManager.getConnectionToHigh(InetAddress.getByName(CassandraCQLClient.addresses.get(currentDc))).writeAndFlush(mm);
-
-        MigrateMessage take = CassandraCQLClient.migrateResponses.get(Thread.currentThread().getId()).poll(120, TimeUnit.SECONDS);
-        long timeTaken = System.nanoTime() - startTime;
-
-        currentDc = take.getPossibleDatacenters().get(0);
-        allOps.add(new AbstractMap.SimpleImmutableEntry<>("m", timeTaken));
-
-        //System.err.println("Migrated to: " + currentDc);
-
-
-      } catch (Exception e) {
-        System.err.println("Exception migrating... " + e);
-        System.out.println("Exception migrating... " + e);
-        System.exit(1);
-      }
-
-      */
     }
 
     return currentKeyspace;
