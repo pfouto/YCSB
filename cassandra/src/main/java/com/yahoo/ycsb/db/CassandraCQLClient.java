@@ -129,6 +129,10 @@ public class CassandraCQLClient extends DB {
         String[] hosts = host.split(",");
 
         for (String dcHost : hosts) {
+          if(Boolean.valueOf(getProperties().getProperty(KeyspaceManager.MIGRATE_PROPERTY)) &&
+              !dcHost.equals(keyspaceManagerMap.get(Thread.currentThread().getId()).currentDc)){
+            continue;
+          }
 
           String[] split = dcHost.split(":");
           String dcName = split[0];
@@ -190,7 +194,7 @@ public class CassandraCQLClient extends DB {
           Metadata metadata = cluster.getMetadata();
           System.err.printf("Connected to cluster: %s\n",
               metadata.getClusterName());
-          System.err.println(metadata.getKeyspace("euw").getReplication());
+          //System.err.println(metadata.getKeyspace("euw").getReplication());
         /*
         for (Host discoveredHost : metadata.getAllHosts()) {
           System.out.printf("Datacenter: %s; Host: %s; Rack: %s\n",
