@@ -129,7 +129,7 @@ public class CassandraCQLClient extends DB {
         String[] hosts = host.split(",");
 
         for (String dcHost : hosts) {
-          if(Boolean.valueOf(getProperties().getProperty(KeyspaceManager.MIGRATE_PROPERTY)) &&
+          if(!Boolean.valueOf(getProperties().getProperty(KeyspaceManager.MIGRATE_PROPERTY)) &&
               !dcHost.equals(keyspaceManagerMap.get(Thread.currentThread().getId()).currentDc)){
             continue;
           }
