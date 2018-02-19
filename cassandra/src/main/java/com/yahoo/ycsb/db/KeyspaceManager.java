@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 
 import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
 
-
 public class KeyspaceManager {
 
   private static final String LOCAL_LAMBDA_PROPERTY = "cassandra.locallambda";

@@ -684,9 +684,9 @@ public final class Client {
         exporter = new TextMeasurementsExporter(out);
       }
 
-      exporter.write("OVERALL", "RunTime(ms)", runtime);
-      double throughput = 1000.0 * (opcount) / (runtime);
-      exporter.write("OVERALL", "Throughput(ops/sec)", throughput);
+      //exporter.write("OVERALL", "RunTime(ms)", runtime);
+      //double throughput = 1000.0 * (opcount) / (runtime);
+      //exporter.write("OVERALL", "Throughput(ops/sec)", throughput);
 
       /*
       final Map<String, Long[]> gcs = Utils.getGCStatst();

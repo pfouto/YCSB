@@ -60,6 +60,7 @@ public class MessageDecoder extends ByteToMessageDecoder { // (1)
 
     } catch (Exception e) {
       System.err.println("Error Decoding message: " + e.getMessage());
+      System.exit(1);
     }
   }
 

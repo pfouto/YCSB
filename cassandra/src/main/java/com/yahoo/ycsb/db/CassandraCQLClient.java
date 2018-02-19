@@ -79,6 +79,9 @@ public class CassandraCQLClient extends DB {
 
   private static boolean trace = false;
 
+  private static long startTime;
+  private static long endTime = 0;
+
   private static Map<Long, KeyspaceManager> keyspaceManagerMap = new ConcurrentHashMap<>();
 
   public static Map<String, Cluster> clusters = null;
@@ -212,6 +215,8 @@ public class CassandraCQLClient extends DB {
       } catch (Exception e) {
         throw new DBException(e);
       }
+      startTime = System.currentTimeMillis();
+      System.err.println("Starting time count...");
     } // synchronized
   }
 
@@ -224,17 +229,6 @@ public class CassandraCQLClient extends DB {
 
     synchronized (INIT_COUNT) {
 
-      if (Boolean.valueOf(getProperties().getProperty(DO_TRANSACTIONS_PROPERTY))) {
-
-
-        List<Map.Entry<String, Long>> allOps = keyspaceManagerMap.get(Thread.currentThread().getId()).getAllOps();
-        System.out.println("[Client] " + Thread.currentThread().toString() + " " + allOps.size());
-        for (Map.Entry<String, Long> e : allOps) {
-          System.out.println(e.getKey() + ":" + e.getValue());
-        }
-      }
-      System.out.println("[Timeouts] " + timeouts.get());
-
       final int curInitCount = INIT_COUNT.decrementAndGet();
       if (curInitCount <= 0) {
         for(Session s : sessions.values()) {
@@ -244,6 +238,29 @@ public class CassandraCQLClient extends DB {
         for (Cluster c : clusters.values()) {
           c.close();
         }
+
+        if(endTime == 0){
+          endTime = System.currentTimeMillis();
+        }
+
+        if (Boolean.valueOf(getProperties().getProperty(DO_TRANSACTIONS_PROPERTY))) {
+          int opCount = 0;
+          for(Map.Entry<Long, KeyspaceManager> entry : keyspaceManagerMap.entrySet()){
+            List<Map.Entry<String, Long>> allOps = entry.getValue().getAllOps();
+            System.out.println("[Client] " + entry.getKey() + " " + allOps.size());
+            opCount+=allOps.size();
+            for (Map.Entry<String, Long> e : allOps) {
+              System.out.println(e.getKey() + ":" + e.getValue());
+            }
+          }
+          System.out.println("[Timeouts] " + timeouts.get());
+          long runtime = endTime-startTime;
+          double throughput = 1000.0 * (opCount) / (runtime);
+          System.out.println("[OVERALL], RunTime(ms), " + runtime);
+          System.out.println("[OVERALL], Throughput(ops/sec), " + throughput);
+        }
+
+
       }
       if (curInitCount < 0) {
         // This should never happen.
