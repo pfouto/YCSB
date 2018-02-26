@@ -1,4 +1,3 @@
-hosts=nae:10.12.0.4,jap:10.13.0.4,as:10.18.0.4,oce:10.15.0.4,ind:10.16.0.4,ca:10.17.0.4,naw:10.11.0.4,euw:10.10.0.4,br:10.14.0.4
 cassandra.readconsistencylevel=ANY_QUORUM
 cassandra.writeconsistencylevel=ANY_QUORUM
 cassandra.readtimeoutmillis=120000
