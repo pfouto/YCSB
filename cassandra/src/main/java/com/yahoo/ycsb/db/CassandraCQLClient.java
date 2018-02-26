@@ -133,9 +133,9 @@ public class CassandraCQLClient extends DB {
           String[] nodeArray = nodeAddresses.split(",");
 
           if(INIT_COUNT.get() == 1){
-            System.out.println("DC: " + dc);
-            System.out.println("Internal: " + internalAddress);
-            System.out.println("Nodes: " + Arrays.asList(nodeArray));
+            System.err.println("DC: " + dc);
+            System.err.println("Internal: " + internalAddress);
+            System.err.println("Nodes: " + Arrays.asList(nodeArray));
           }
 
           if(!Boolean.valueOf(getProperties().getProperty(KeyspaceManager.MIGRATE_PROPERTY)) &&
