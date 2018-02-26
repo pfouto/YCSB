@@ -51,7 +51,7 @@ public class CassandraCQLClient extends DB {
   public static final String USERNAME_PROPERTY = "cassandra.username";
   public static final String PASSWORD_PROPERTY = "cassandra.password";
 
-  public static final String HOSTS_PROPERTY = "hosts";
+  public static final String DCS_PROPERTY = "dcs";
   public static final String PORT_PROPERTY = "port";
   public static final String PORT_PROPERTY_DEFAULT = "9042";
 
@@ -86,7 +86,7 @@ public class CassandraCQLClient extends DB {
 
   public static Map<String, Cluster> clusters = null;
   private static Map<String, Session> sessions = null;
-  public static Map<String, String> addresses = null;
+  public static Map<String, String> internals = null;
   public static Map<Long, BlockingQueue<MigrateMessage>> migrateResponses = new HashMap<>();
 
   /**
@@ -117,32 +117,33 @@ public class CassandraCQLClient extends DB {
 
         clusters = new ConcurrentHashMap<>();
         sessions = new ConcurrentHashMap<>();
-        addresses = new ConcurrentHashMap<>();
+        internals = new ConcurrentHashMap<>();
 
         debug =
             Boolean.parseBoolean(getProperties().getProperty("debug", "false"));
         trace = Boolean.valueOf(getProperties().getProperty(TRACING_PROPERTY, TRACING_PROPERTY_DEFAULT));
 
-        String host = getProperties().getProperty(HOSTS_PROPERTY);
-        if (host == null) {
-          throw new DBException(String.format(
-              "Required property \"%s\" missing for CassandraCQLClient",
-              HOSTS_PROPERTY));
-        }
-        String[] hosts = host.split(",");
+        String dcs = getProperties().getProperty(DCS_PROPERTY);
+        String[] dcArray = dcs.split(",");
 
-        for (String dcHost : hosts) {
+        for (String dc : dcArray) {
 
-          String[] split = dcHost.split(":");
-          String dcName = split[0];
-          String dcAddr = split[1];
+          String internalAddress = getProperties().getProperty("internal."+dc);
+          String nodeAddresses = getProperties().getProperty("hosts."+dc);
+          String[] nodeArray = nodeAddresses.split(",");
+
+          if(INIT_COUNT.get() == 1){
+            System.out.println("DC: " + dc);
+            System.out.println("Internal: " + internalAddress);
+            System.out.println("Nodes: " + Arrays.asList(nodeArray));
+          }
 
           if(!Boolean.valueOf(getProperties().getProperty(KeyspaceManager.MIGRATE_PROPERTY)) &&
-              !dcName.equals(keyspaceManagerMap.get(Thread.currentThread().getId()).currentDc)){
+              !dc.equals(keyspaceManagerMap.get(Thread.currentThread().getId()).currentDc)){
             continue;
           }
 
-          addresses.put(dcName, dcAddr);
+          internals.put(dc, internalAddress);
 
           String port = getProperties().getProperty(PORT_PROPERTY, PORT_PROPERTY_DEFAULT);
 
@@ -159,10 +160,10 @@ public class CassandraCQLClient extends DB {
           Cluster cluster;
           if ((username != null) && !username.isEmpty()) {
             cluster = Cluster.builder().withCredentials(username, password)
-                .withPort(Integer.valueOf(port)).addContactPoint(dcAddr).build();
+                .withPort(Integer.valueOf(port)).addContactPoints(nodeArray).build();
           } else {
             cluster = Cluster.builder().withPort(Integer.valueOf(port))
-                .addContactPoint(dcAddr).build();
+                .addContactPoints(nodeArray).build();
           }
 
           String maxConnections = getProperties().getProperty(
@@ -208,8 +209,8 @@ public class CassandraCQLClient extends DB {
 
           Session session = cluster.connect();
 
-          clusters.put(dcName, cluster);
-          sessions.put(dcName, session);
+          clusters.put(dc, cluster);
+          sessions.put(dc, session);
         }
 
       } catch (Exception e) {

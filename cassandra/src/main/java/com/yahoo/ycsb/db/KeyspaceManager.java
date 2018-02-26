@@ -97,7 +97,7 @@ public class KeyspaceManager {
           long startTime = System.nanoTime();
           MigrateMessage mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, null,
               InetAddress.getLocalHost(), -1, System.currentTimeMillis());
-          ConnectionManager.getConnectionToHigh(InetAddress.getByName(CassandraCQLClient.addresses.get(currentDc))).writeAndFlush(mm);
+          ConnectionManager.getConnectionToHigh(InetAddress.getByName(CassandraCQLClient.internals.get(currentDc))).writeAndFlush(mm);
 
           MigrateMessage take = CassandraCQLClient.migrateResponses.get(Thread.currentThread().getId()).poll(120, TimeUnit.SECONDS);
           long timeTaken = System.nanoTime() - startTime;
