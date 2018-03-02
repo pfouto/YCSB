@@ -128,18 +128,16 @@ public class CassandraCQLClient extends DB {
 
         for (String dc : dcArray) {
 
-          String internalAddress = getProperties().getProperty("internal."+dc);
-          String nodeAddresses = getProperties().getProperty("hosts."+dc);
+          String internalAddress = getProperties().getProperty("internal." + dc);
+          String nodeAddresses = getProperties().getProperty("hosts." + dc);
           String[] nodeArray = nodeAddresses.split(",");
 
-          if(INIT_COUNT.get() == 1){
-            System.err.println("DC: " + dc);
-            System.err.println("Internal: " + internalAddress);
-            System.err.println("Nodes: " + Arrays.asList(nodeArray));
-          }
+          System.err.println("DC: " + dc);
+          System.err.println("Internal: " + internalAddress);
+          System.err.println("Nodes: " + Arrays.asList(nodeArray));
 
-          if(!Boolean.valueOf(getProperties().getProperty(KeyspaceManager.MIGRATE_PROPERTY)) &&
-              !dc.equals(keyspaceManagerMap.get(Thread.currentThread().getId()).currentDc)){
+          if (!Boolean.valueOf(getProperties().getProperty(KeyspaceManager.MIGRATE_PROPERTY)) &&
+              !dc.equals(keyspaceManagerMap.get(Thread.currentThread().getId()).currentDc)) {
             continue;
           }
 
@@ -232,7 +230,7 @@ public class CassandraCQLClient extends DB {
 
       final int curInitCount = INIT_COUNT.decrementAndGet();
       if (curInitCount <= 0) {
-        for(Session s : sessions.values()) {
+        for (Session s : sessions.values()) {
           s.close();
         }
 
@@ -240,22 +238,22 @@ public class CassandraCQLClient extends DB {
           c.close();
         }
 
-        if(endTime == 0){
+        if (endTime == 0) {
           endTime = System.currentTimeMillis();
         }
 
         if (Boolean.valueOf(getProperties().getProperty(DO_TRANSACTIONS_PROPERTY))) {
           int opCount = 0;
-          for(Map.Entry<Long, KeyspaceManager> entry : keyspaceManagerMap.entrySet()){
+          for (Map.Entry<Long, KeyspaceManager> entry : keyspaceManagerMap.entrySet()) {
             List<Map.Entry<String, Long>> allOps = entry.getValue().getAllOps();
             System.out.println("[Client] " + entry.getKey() + " " + allOps.size());
-            opCount+=allOps.size();
+            opCount += allOps.size();
             for (Map.Entry<String, Long> e : allOps) {
               System.out.println(e.getKey() + ":" + e.getValue());
             }
           }
           System.out.println("[Timeouts] " + timeouts.get());
-          long runtime = endTime-startTime;
+          long runtime = endTime - startTime;
           double throughput = 1000.0 * (opCount) / (runtime);
           System.out.println("[OVERALL], RunTime(ms), " + runtime);
           System.out.println("[OVERALL], Throughput(ops/sec), " + throughput);
