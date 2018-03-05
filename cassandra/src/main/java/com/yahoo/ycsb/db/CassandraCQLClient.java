@@ -210,6 +210,11 @@ public class CassandraCQLClient extends DB {
       } catch (Exception e) {
         throw new DBException(e);
       }
+      try {
+        Thread.sleep(10000);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
       startTime = System.currentTimeMillis();
       System.err.println("Starting time count...");
     } // synchronized
