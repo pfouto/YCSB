@@ -240,6 +240,7 @@ public class CassandraCQLClient extends DB {
 
         if (endTime == 0) {
           endTime = System.currentTimeMillis();
+          System.err.println("Stopped time count");
         }
 
         if (Boolean.valueOf(getProperties().getProperty(DO_TRANSACTIONS_PROPERTY))) {
@@ -311,6 +312,7 @@ public class CassandraCQLClient extends DB {
 
       long startTime = System.nanoTime();
       ResultSet rs = sessions.get(keyspaceManager.currentDc).execute(stmt);
+
       long timeTaken = System.nanoTime() - startTime;
 
       if (rs.isExhausted()) {
