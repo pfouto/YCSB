@@ -132,10 +132,6 @@ public class CassandraCQLClient extends DB {
           String nodeAddresses = getProperties().getProperty("hosts." + dc);
           String[] nodeArray = nodeAddresses.split(",");
 
-          System.err.println("DC: " + dc);
-          System.err.println("Internal: " + internalAddress);
-          System.err.println("Nodes: " + Arrays.asList(nodeArray));
-
           if (!Boolean.valueOf(getProperties().getProperty(KeyspaceManager.MIGRATE_PROPERTY)) &&
               !dc.equals(keyspaceManagerMap.get(Thread.currentThread().getId()).currentDc)) {
             continue;
@@ -195,8 +191,8 @@ public class CassandraCQLClient extends DB {
           }
 
           Metadata metadata = cluster.getMetadata();
-          System.err.printf("Connected to cluster: %s\n",
-              metadata.getClusterName());
+          System.err.printf("Connected to cluster: %s:%s\n",
+              metadata.getClusterName(), dc);
           //System.err.println(metadata.getKeyspace("euw").getReplication());
         /*
         for (Host discoveredHost : metadata.getAllHosts()) {
