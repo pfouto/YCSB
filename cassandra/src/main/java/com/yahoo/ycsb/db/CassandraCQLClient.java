@@ -308,7 +308,8 @@ public class CassandraCQLClient extends DB {
 
       long startTime = System.nanoTime();
       ResultSet rs = sessions.get(keyspaceManager.currentDc).execute(stmt);
-      System.err.println("r: " + rs.getExecutionInfo().getQueriedHost());
+      System.err.println("r: " + rs.getExecutionInfo().getQueriedHost() + " " + rs.getExecutionInfo().getAchievedConsistencyLevel()
+          + " " + stmt.getConsistencyLevel() + " " + stmt.getKeyspace());
       long timeTaken = System.nanoTime() - startTime;
 
       if (rs.isExhausted()) {
