@@ -90,8 +90,6 @@ public class KeyspaceManager {
           }
         }
 
-        System.err.println("migrating to ks: " + currentKeyspace + " possible dcs: " + possibleDcs);
-
         try {
           long startTime = System.nanoTime();
           MigrateMessage mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, null,
@@ -109,7 +107,6 @@ public class KeyspaceManager {
           currentDc = take.getPossibleDatacenters().get(0);
           allOps.add(new AbstractMap.SimpleImmutableEntry<>("m", timeTaken));
 
-          System.err.println("Migrated to " + currentDc + " for ks " + currentKeyspace);
 
         } catch (Exception e) {
           System.err.println("Exception migrating... " + e);
