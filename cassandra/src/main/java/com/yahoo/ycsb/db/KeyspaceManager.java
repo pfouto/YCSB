@@ -105,8 +105,8 @@ public class KeyspaceManager {
           long timeTaken = System.nanoTime() - startTime;
 
           currentDc = take.getPossibleDatacenters().get(0);
-          allOps.add(new AbstractMap.SimpleImmutableEntry<>("m", timeTaken));
 
+          opDone(timeTaken, "m");
 
         } catch (Exception e) {
           System.err.println("Exception migrating... " + e);
@@ -114,8 +114,8 @@ public class KeyspaceManager {
           System.exit(1);
         }
 
-      }
-    }
+      } // end migrate if
+    } //end next seq if
 
     return currentKeyspace;
   }
