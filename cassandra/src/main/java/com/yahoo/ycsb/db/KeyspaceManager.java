@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
+import static com.yahoo.ycsb.Client.main;
 
 public class KeyspaceManager {
 
@@ -63,6 +64,10 @@ public class KeyspaceManager {
 
   public String nextOpKeyspace() {
     if (!running) {
+      return mainKeyspace;
+    }
+
+    if(remoteLambda == 0){
       return mainKeyspace;
     }
 

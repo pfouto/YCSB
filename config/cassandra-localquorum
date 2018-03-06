@@ -1,0 +1,5 @@
+cassandra.readconsistencylevel=LOCAL_QUORUM
+cassandra.writeconsistencylevel=LOCAL_QUORUM
+cassandra.readtimeoutmillis=30000
+cassandra.locallambda=10000000000
+cassandra.remotelambda=0
