@@ -101,7 +101,7 @@ public class KeyspaceManager {
               InetAddress.getLocalHost(), -1, System.currentTimeMillis());
           ConnectionManager.getConnectionToHigh(InetAddress.getByName(CassandraCQLClient.internals.get(currentDc))).writeAndFlush(mm);
 
-          MigrateMessage take = CassandraCQLClient.migrateResponses.get(Thread.currentThread().getId()).poll(240, TimeUnit.SECONDS);
+          MigrateMessage take = CassandraCQLClient.migrateResponses.get(Thread.currentThread().getId()).poll(600, TimeUnit.SECONDS);
           if(take == null){
             System.err.println("timeout migrating: " + mm);
             System.out.println("timeout migrating: " + mm);
