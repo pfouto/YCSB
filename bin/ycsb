@@ -201,8 +201,7 @@ def is_distribution():
 # Given module is full module name eg. 'core' or 'couchbase-binding'
 def get_classpath_from_maven(module):
     try:
-        debug("Running 'mvn -pl com.yahoo.ycsb:" + module + " -am package -DskipTests "
-              "dependency:build-classpath -DincludeScope=compile -Dmdep.outputFilterFile=true'")
+        debug("Running 'mvn -pl com.yahoo.ycsb:" + module + " ... ")
         mvn_output = check_output(["mvn", "-pl", "com.yahoo.ycsb:" + module,
                                    "-am", "package", "-DskipTests",
                                    "dependency:build-classpath",
@@ -276,9 +275,8 @@ def main():
         cp.extend(find_jars(os.path.join(ycsb_home, "lib")))
         cp.extend(find_jars(os.path.join(db_dir, "lib")))
     else:
-        warn("Running against a source checkout. In order to get our runtime "
-             "dependencies we'll have to invoke Maven. Depending on the state "
-             "of your system, this may take ~30-45 seconds")
+        warn("source checkout. "
+             "invoking Maven. ")
         db_location = "core" if (binding == "basic" or binding == "basicts") else binding
         project = "core" if (binding == "basic" or binding == "basicts") else binding + "-binding"
         db_dir = os.path.join(ycsb_home, db_location)
@@ -299,7 +297,7 @@ def main():
                      main_classname, "-db", db_classname] + remaining)
     if command:
         ycsb_command.append(command)
-    print >> sys.stderr, " ".join(ycsb_command)
+    #print >> sys.stderr, " ".join(ycsb_command)
     try:
         return subprocess.call(ycsb_command)
     except OSError as e:
