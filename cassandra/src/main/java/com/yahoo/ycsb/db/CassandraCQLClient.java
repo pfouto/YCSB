@@ -113,6 +113,8 @@ public class CassandraCQLClient extends DB {
 
       try {
 
+        System.err.println("Setting up connections...");
+
         ConnectionManager.init();
 
         clusters = new ConcurrentHashMap<>();
@@ -191,8 +193,8 @@ public class CassandraCQLClient extends DB {
           }
 
           Metadata metadata = cluster.getMetadata();
-          System.err.printf("Connected to cluster: %s:%s\n",
-              metadata.getClusterName(), dc);
+          /*System.err.printf("Connected to cluster: %s:%s\n",
+              metadata.getClusterName(), dc);*/
           //System.err.println(metadata.getKeyspace("euw").getReplication());
         /*
         for (Host discoveredHost : metadata.getAllHosts()) {
