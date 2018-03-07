@@ -754,7 +754,7 @@ public final class Client {
 
     initWorkload(props, warningthread, workload, tracer);
 
-    System.err.println("Starting test.");
+    //System.err.println("Starting test.");
     final CountDownLatch completeLatch = new CountDownLatch(threadcount);
 
     final List<ClientThread> clients = initDb(dbname, props, threadcount, targetperthreadperms,
@@ -958,8 +958,8 @@ public final class Client {
       System.err.println("Unable to retrieve client version.");
     }
 
-    System.err.println();
-    System.err.println("Loading workload...");
+    //System.err.println();
+    //System.err.println("Loading workload...");
     try {
       Class workloadclass = classLoader.loadClass(props.getProperty(WORKLOAD_PROPERTY));
 
