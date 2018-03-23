@@ -1,5 +1,8 @@
 package com.yahoo.ycsb.db;
 
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.querybuilder.Insert;
+
 import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -16,6 +19,9 @@ public class KeyspaceManager {
   public static final String MIGRATE_PROPERTY = "migrate";
 
   private static final String MAIN_KEYSPACE_PROPERTY = "cassandra.mainkeyspace";
+
+  private int lblTs = -1;
+  private InetAddress lblSrc = null;
 
   private int localLambda;
   private int remoteLambda;
@@ -97,8 +103,14 @@ public class KeyspaceManager {
 
         try {
           long startTime = System.nanoTime();
-          MigrateMessage mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, null,
-              InetAddress.getLocalHost(), -1, System.currentTimeMillis());
+          MigrateMessage mm;
+          if(CassandraCQLClient.saturn){
+            mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, lblTs, lblSrc, null,
+                InetAddress.getLocalHost(), -1, System.currentTimeMillis());
+          } else {
+            mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, null,
+                InetAddress.getLocalHost(), -1, System.currentTimeMillis());
+          }
           ConnectionManager.getConnectionToHigh(InetAddress.getByName(CassandraCQLClient.internals.get(currentDc))).writeAndFlush(mm);
 
           MigrateMessage take = CassandraCQLClient.migrateResponses.get(Thread.currentThread().getId()).poll(600, TimeUnit.SECONDS);
@@ -164,5 +176,20 @@ public class KeyspaceManager {
 
   public List<Map.Entry<String, Long>> getAllOps() {
     return allOps;
+  }
+
+  public void addLabel(Insert insertStmt) {
+    insertStmt.value("lbl_ts", lblTs);
+    insertStmt.value("lbl_src", lblSrc);
+  }
+
+  public void extractNewLabel(ResultSet rs) {
+    int resTs = rs.one().getInt("lbl_ts");
+    InetAddress resSrc = rs.one().getInet("lbl_src");
+
+    if(resTs > lblTs || (resTs == lblTs && resSrc.getHostAddress().compareTo(lblSrc.getHostAddress()) > 0)){
+      lblTs = resTs;
+      lblSrc = resSrc;
+    }
   }
 }

@@ -13,14 +13,31 @@ public class MigrateMessage extends Message{
   private List<String> possibleDatacenters;
   private Map<String, Integer> clock;
   private long thread;
+  private int saturnLabel;
+  private InetAddress srcSaturn;
 
   public MigrateMessage(long thread, String sourceDc, List<String> possibleDatacenters,
                         Map<String, Integer> clock, InetAddress from, int verb, long timestamp) {
+    this(thread, sourceDc, possibleDatacenters, -1, null, clock, from, verb, timestamp);
+  }
+
+  public MigrateMessage(long thread, String sourceDc, List<String> possibleDatacenters, int labelSaturn,
+                        InetAddress srcSaturn, Map<String, Integer> clock, InetAddress from, int verb, long timestamp) {
     super(from, verb, CODE, timestamp);
     this.thread = thread;
     this.sourceDc = sourceDc == null ? "" : sourceDc;
     this.clock = clock == null ? Collections.emptyMap() : clock;
     this.possibleDatacenters = possibleDatacenters;
+    this.saturnLabel = labelSaturn;
+    this.srcSaturn = srcSaturn;
+  }
+
+  public InetAddress getSrcSaturn() {
+    return srcSaturn;
+  }
+
+  public int getSaturnLabel() {
+    return saturnLabel;
   }
 
   public List<String> getPossibleDatacenters() {
@@ -42,6 +59,7 @@ public class MigrateMessage extends Message{
   @Override
   public String toString(){
     return super.toString() + " THREAD: " + thread + " SOURCEDC: " + sourceDc
-        + " DATACENTERS: " + possibleDatacenters + " CLOCK " + clock;
+        + " DATACENTERS: " + possibleDatacenters + " CLOCK " + clock + " TSSAT: " + saturnLabel
+        + " SRCSAT: " + srcSaturn;
   }
 }

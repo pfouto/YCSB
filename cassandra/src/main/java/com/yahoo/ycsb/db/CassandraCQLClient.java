@@ -68,6 +68,8 @@ public class CassandraCQLClient extends DB {
   public static final String TRACING_PROPERTY = "cassandra.tracing";
   public static final String TRACING_PROPERTY_DEFAULT = "false";
 
+  public static final String SATURN_PROPERTY = "saturn";
+
   /**
    * Count the number of times initialized to teardown on the last
    * {@link #cleanup()}.
@@ -78,6 +80,9 @@ public class CassandraCQLClient extends DB {
   private static boolean debug = false;
 
   private static boolean trace = false;
+
+
+  public static boolean saturn;
 
   private static long startTime;
   private static long endTime = 0;
@@ -124,6 +129,7 @@ public class CassandraCQLClient extends DB {
         debug =
             Boolean.parseBoolean(getProperties().getProperty("debug", "false"));
         trace = Boolean.valueOf(getProperties().getProperty(TRACING_PROPERTY, TRACING_PROPERTY_DEFAULT));
+        saturn = Boolean.valueOf(getProperties().getProperty(SATURN_PROPERTY));
 
         String dcs = getProperties().getProperty(DCS_PROPERTY);
         String[] dcArray = dcs.split(",");
@@ -317,6 +323,10 @@ public class CassandraCQLClient extends DB {
       ResultSet rs = sessions.get(keyspaceManager.currentDc).execute(stmt);
       long timeTaken = System.nanoTime() - startTime;
 
+      if(saturn){
+        keyspaceManager.extractNewLabel(rs);
+      }
+
       if (rs.isExhausted()) {
         return Status.NOT_FOUND;
       }
@@ -495,6 +505,10 @@ public class CassandraCQLClient extends DB {
         insertStmt.value(entry.getKey(), value);
       }
 
+      if(saturn){
+        keyspaceManager.addLabel(insertStmt);
+      }
+
       insertStmt.setConsistencyLevel(writeConsistencyLevel);
 
       if (debug) {
@@ -505,8 +519,13 @@ public class CassandraCQLClient extends DB {
       }
 
       long startTime = System.nanoTime();
-      sessions.get(keyspaceManager.currentDc).execute(insertStmt);
+      ResultSet execute = sessions.get(keyspaceManager.currentDc).execute(insertStmt);
       long timeTaken = System.nanoTime() - startTime;
+
+      if(saturn){
+        keyspaceManager.extractNewLabel(execute);
+      }
+
 
       keyspaceManager.opDone(timeTaken, "i");
 
