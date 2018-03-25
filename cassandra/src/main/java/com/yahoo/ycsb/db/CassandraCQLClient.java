@@ -252,6 +252,9 @@ public class CassandraCQLClient extends DB {
           System.err.println("Stopped time count");
         }
 
+        keyspaceManagerMap.values().forEach(k -> System.err.print(k.getLblTs() + "\t"));
+        System.err.println();
+
         if (Boolean.valueOf(getProperties().getProperty(DO_TRANSACTIONS_PROPERTY))) {
           int opCount = 0;
           for (Map.Entry<Long, KeyspaceManager> entry : keyspaceManagerMap.entrySet()) {
