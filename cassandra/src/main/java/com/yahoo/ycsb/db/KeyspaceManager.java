@@ -21,7 +21,7 @@ public class KeyspaceManager {
   private static final String MAIN_KEYSPACE_PROPERTY = "cassandra.mainkeyspace";
 
   private int lblTs = -1;
-  private InetAddress lblSrc = null;
+  private InetAddress lblSrc = InetAddress.getLoopbackAddress();
 
   private int localLambda;
   private int remoteLambda;
