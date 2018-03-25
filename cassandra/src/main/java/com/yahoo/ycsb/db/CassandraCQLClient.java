@@ -323,17 +323,21 @@ public class CassandraCQLClient extends DB {
       ResultSet rs = sessions.get(keyspaceManager.currentDc).execute(stmt);
       long timeTaken = System.nanoTime() - startTime;
 
-      if(saturn){
-        keyspaceManager.extractNewLabel(rs);
-      }
 
       if (rs.isExhausted()) {
+        System.err.println("Not found");
+        System.exit(1);
         return Status.NOT_FOUND;
       }
 
       // Should be only 1 row
       Row row = rs.one();
       ColumnDefinitions cd = row.getColumnDefinitions();
+
+      if(saturn){
+        keyspaceManager.extractNewLabel(row);
+      }
+
 
       for (ColumnDefinitions.Definition def : cd) {
         ByteBuffer val = row.getBytesUnsafe(def.getName());
@@ -351,6 +355,7 @@ public class CassandraCQLClient extends DB {
     } catch (ReadTimeoutException | NoHostAvailableException e) {
       timeouts.incrementAndGet();
       System.err.println("[" + keyspaceManager.getMainKeyspace() + " -> " + keyspaceManager.getCurrentKeyspace() + "] " + "Timeout reading key: " + e);
+      System.exit(1);
       return Status.ERROR;
     } catch (Exception e) {
       e.printStackTrace();
@@ -523,7 +528,7 @@ public class CassandraCQLClient extends DB {
       long timeTaken = System.nanoTime() - startTime;
 
       if(saturn){
-        keyspaceManager.extractNewLabel(execute);
+        keyspaceManager.extractNewLabel(execute.one());
       }
 
 

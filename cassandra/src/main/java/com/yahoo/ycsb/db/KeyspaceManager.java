@@ -184,8 +184,7 @@ public class KeyspaceManager {
     insertStmt.value("lbl_src", lblSrc);
   }
 
-  public void extractNewLabel(ResultSet rs) {
-    Row row = rs.one();
+  public void extractNewLabel(Row row) {
     int resTs = row.getInt("lbl_ts");
     InetAddress resSrc = row.getInet("lbl_src");
 
