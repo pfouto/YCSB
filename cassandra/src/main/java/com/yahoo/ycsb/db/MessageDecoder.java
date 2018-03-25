@@ -50,7 +50,9 @@ public class MessageDecoder extends ByteToMessageDecoder { // (1)
               int val = inputStream.readInt();
               c.put(key, val);
             }
-            out.add(new MigrateMessage(thread, sdc, possibleDcs,c, from, verb, timestamp));
+            int label = in.readInt();
+            InetAddress srcSat = CompactEndpointSerializationHelper.deserialize(inputStream);
+            out.add(new MigrateMessage(thread, sdc, possibleDcs, label, srcSat, c, from, verb, timestamp));
             break;
           default:
             throw new Exception("unknown/unhandled messageType: " + messageCode);
@@ -60,6 +62,7 @@ public class MessageDecoder extends ByteToMessageDecoder { // (1)
 
     } catch (Exception e) {
       System.err.println("Error Decoding message: " + e.getMessage());
+      e.printStackTrace();
       System.exit(1);
     }
   }
