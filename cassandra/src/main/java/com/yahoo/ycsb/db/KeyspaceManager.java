@@ -1,6 +1,7 @@
 package com.yahoo.ycsb.db;
 
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.Insert;
 
 import java.net.InetAddress;
@@ -184,8 +185,9 @@ public class KeyspaceManager {
   }
 
   public void extractNewLabel(ResultSet rs) {
-    int resTs = rs.one().getInt("lbl_ts");
-    InetAddress resSrc = rs.one().getInet("lbl_src");
+    Row row = rs.one();
+    int resTs = row.getInt("lbl_ts");
+    InetAddress resSrc = row.getInet("lbl_src");
 
     if(resTs > lblTs || (resTs == lblTs && resSrc.getHostAddress().compareTo(lblSrc.getHostAddress()) > 0)){
       lblTs = resTs;
