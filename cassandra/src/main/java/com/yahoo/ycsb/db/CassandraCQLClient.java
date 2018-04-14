@@ -69,6 +69,7 @@ public class CassandraCQLClient extends DB {
   public static final String TRACING_PROPERTY_DEFAULT = "false";
 
   public static final String SATURN_PROPERTY = "saturn";
+  public static final String CLIENTCLOCK_PROPERTY = "clientclock";
 
   /**
    * Count the number of times initialized to teardown on the last
@@ -83,6 +84,7 @@ public class CassandraCQLClient extends DB {
 
 
   public static boolean saturn;
+  public static boolean clientclock;
 
   private static long startTime;
   private static long endTime = 0;
@@ -130,6 +132,7 @@ public class CassandraCQLClient extends DB {
             Boolean.parseBoolean(getProperties().getProperty("debug", "false"));
         trace = Boolean.valueOf(getProperties().getProperty(TRACING_PROPERTY, TRACING_PROPERTY_DEFAULT));
         saturn = Boolean.valueOf(getProperties().getProperty(SATURN_PROPERTY));
+        clientclock = Boolean.valueOf(getProperties().getProperty(CLIENTCLOCK_PROPERTY));
 
         String dcs = getProperties().getProperty(DCS_PROPERTY);
         String[] dcArray = dcs.split(",");
@@ -252,7 +255,11 @@ public class CassandraCQLClient extends DB {
           System.err.println("Stopped time count");
         }
 
-        keyspaceManagerMap.values().forEach(k -> System.err.print(k.getLblTs() + "\t"));
+        if(saturn){
+          keyspaceManagerMap.values().forEach(k -> System.err.print(k.getLblTs() + "\t"));
+        } else if (clientclock){
+          keyspaceManagerMap.values().forEach(k -> System.err.print(k.getClientClock().toString() + "\t"));
+        }
         System.err.println();
 
         if (Boolean.valueOf(getProperties().getProperty(DO_TRANSACTIONS_PROPERTY))) {
@@ -339,6 +346,8 @@ public class CassandraCQLClient extends DB {
 
       if(saturn){
         keyspaceManager.extractNewLabel(row);
+      } else if (clientclock){
+        keyspaceManager.extractNewClientClock(row);
       }
 
 
@@ -515,6 +524,8 @@ public class CassandraCQLClient extends DB {
 
       if(saturn){
         keyspaceManager.addLabel(insertStmt);
+      } else if (clientclock){
+        keyspaceManager.addClientClock(insertStmt);
       }
 
       insertStmt.setConsistencyLevel(writeConsistencyLevel);
@@ -532,6 +543,8 @@ public class CassandraCQLClient extends DB {
 
       if(saturn){
         keyspaceManager.extractNewLabel(execute.one());
+      } else if (clientclock){
+        keyspaceManager.extractNewClientClock(execute.one());
       }
 
 

@@ -1,6 +1,5 @@
 package com.yahoo.ycsb.db;
 
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.Insert;
 
@@ -9,7 +8,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.yahoo.ycsb.Client.DO_TRANSACTIONS_PROPERTY;
-import static com.yahoo.ycsb.Client.main;
 
 public class KeyspaceManager {
 
@@ -17,12 +15,13 @@ public class KeyspaceManager {
   private static final String REMOTE_LAMBDA_PROPERTY = "cassandra.remotelambda";
   private static final String LOCAL_KEYSPACES_PROPERTY = "cassandra.localkeyspaces";
   private static final String REMOTE_KEYSPACES_PROPERTY = "cassandra.remotekeyspaces";
-  public static final String MIGRATE_PROPERTY = "migrate";
+  static final String MIGRATE_PROPERTY = "migrate";
 
   private static final String MAIN_KEYSPACE_PROPERTY = "cassandra.mainkeyspace";
 
   private int lblTs = -1;
   private InetAddress lblSrc = InetAddress.getLoopbackAddress();
+  private Map<String, Integer> clientClock = new HashMap<>();
 
   private int localLambda;
   private int remoteLambda;
@@ -37,7 +36,7 @@ public class KeyspaceManager {
   private boolean local;
   private String currentKeyspace;
 
-  public String currentDc;
+  String currentDc;
 
   private static Random r = new Random();
 
@@ -69,7 +68,7 @@ public class KeyspaceManager {
     allOps = new LinkedList<>();
   }
 
-  public String nextOpKeyspace() {
+  String nextOpKeyspace() {
     if (!running) {
       return mainKeyspace;
     }
@@ -108,6 +107,9 @@ public class KeyspaceManager {
           if(CassandraCQLClient.saturn){
             mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, lblTs, lblSrc, null,
                 InetAddress.getLocalHost(), -1, System.currentTimeMillis());
+          } else if(CassandraCQLClient.clientclock){
+            mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, clientClock,
+                InetAddress.getLocalHost(), -1, System.currentTimeMillis());
           } else {
             mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, null,
                 InetAddress.getLocalHost(), -1, System.currentTimeMillis());
@@ -138,7 +140,7 @@ public class KeyspaceManager {
     return currentKeyspace;
   }
 
-  public void opDone(long nanosTaken, String type) {
+  void opDone(long nanosTaken, String type) {
     if (!running)
       return;
 
@@ -146,11 +148,11 @@ public class KeyspaceManager {
 
   }
 
-  public String getCurrentKeyspace() {
+  String getCurrentKeyspace() {
     return currentKeyspace;
   }
 
-  public String getMainKeyspace() {
+  String getMainKeyspace() {
     return mainKeyspace;
   }
 
@@ -175,20 +177,20 @@ public class KeyspaceManager {
     return k - 1;
   }
 
-  public List<Map.Entry<String, Long>> getAllOps() {
+  List<Map.Entry<String, Long>> getAllOps() {
     return allOps;
   }
 
-  public void addLabel(Insert insertStmt) {
+  void addLabel(Insert insertStmt) {
     insertStmt.value("lbl_ts", lblTs);
     insertStmt.value("lbl_src", lblSrc);
   }
 
-  public int getLblTs() {
+  int getLblTs() {
     return lblTs;
   }
 
-  public void extractNewLabel(Row row) {
+  void extractNewLabel(Row row) {
     int resTs = row.getInt("lbl_ts");
     InetAddress resSrc = row.getInet("lbl_src");
 
@@ -196,5 +198,21 @@ public class KeyspaceManager {
       lblTs = resTs;
       lblSrc = resSrc;
     }
+  }
+
+  void extractNewClientClock(Row row) {
+    Map<String, Integer> receivedClock = row.getMap("clock", String.class, Integer.class);
+    receivedClock.forEach((k,v) -> {
+      if(v > clientClock.getOrDefault(k, -1))
+        clientClock.put(k, v);
+    });
+  }
+
+  void addClientClock(Insert insertStmt) {
+    insertStmt.value("clock", clientClock);
+  }
+
+  Map<String, Integer> getClientClock() {
+    return clientClock;
   }
 }
