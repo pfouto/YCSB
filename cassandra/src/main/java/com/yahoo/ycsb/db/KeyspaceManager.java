@@ -202,10 +202,9 @@ public class KeyspaceManager {
 
   void extractNewClientClock(Row row) {
     Map<String, Integer> receivedClock = row.getMap("clock", String.class, Integer.class);
-    receivedClock.forEach((k,v) -> {
-      if(v > clientClock.getOrDefault(k, -1))
-        clientClock.put(k, v);
-    });
+    for(Map.Entry<String, Integer> entry : receivedClock.entrySet()){
+      clientClock.merge(entry.getKey(), entry.getValue(), Math::max);
+    }
   }
 
   void addClientClock(Insert insertStmt) {

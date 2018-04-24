@@ -49,8 +49,8 @@ public class MessageEncoder extends ChannelOutboundHandlerAdapter {
           outStream.writeUTF(clockEntry.getKey());
           outStream.writeInt(clockEntry.getValue());
         }
-        outStream.writeInt(mm.getSaturnLabel());
-        CompactEndpointSerializationHelper.serialize(mm.getSrcSaturn(), outStream);
+        //outStream.writeInt(mm.getSaturnLabel());
+        //CompactEndpointSerializationHelper.serialize(mm.getSrcSaturn(), outStream);
       }
 
       //write size
