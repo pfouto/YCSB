@@ -208,6 +208,9 @@ public class KeyspaceManager {
   }
 
   void addClientClock(Insert insertStmt) {
+    if(clientClock.isEmpty()){
+      clientClock.put(mainKeyspace, 0);
+    }
     insertStmt.value("clock", clientClock);
   }
 
