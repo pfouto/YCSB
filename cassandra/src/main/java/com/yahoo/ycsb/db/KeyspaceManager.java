@@ -106,13 +106,13 @@ public class KeyspaceManager {
           MigrateMessage mm;
           if(CassandraCQLClient.saturn){
             mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, lblTs, lblSrc, null,
-                InetAddress.getLocalHost(), -1, System.currentTimeMillis());
+                InetAddress.getLocalHost(), System.currentTimeMillis());
           } else if(CassandraCQLClient.clientclock){
             mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, clientClock,
-                InetAddress.getLocalHost(), -1, System.currentTimeMillis());
+                InetAddress.getLocalHost(), System.currentTimeMillis());
           } else {
             mm = new MigrateMessage(Thread.currentThread().getId(), currentDc, possibleDcs, null,
-                InetAddress.getLocalHost(), -1, System.currentTimeMillis());
+                InetAddress.getLocalHost(), System.currentTimeMillis());
           }
           ConnectionManager.getConnectionToHigh(InetAddress.getByName(CassandraCQLClient.internals.get(currentDc))).writeAndFlush(mm);
 
