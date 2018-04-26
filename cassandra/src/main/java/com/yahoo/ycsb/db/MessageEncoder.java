@@ -28,8 +28,6 @@ public class MessageEncoder extends ChannelOutboundHandlerAdapter {
       outStream.writeInt(m.getCode());
       //from
       CompactEndpointSerializationHelper.serialize(m.getFrom(), outStream);
-      //verb
-      outStream.writeInt(m.getVerb());
       //timestamp
       outStream.writeLong(m.getTimestamp());
       //specific
