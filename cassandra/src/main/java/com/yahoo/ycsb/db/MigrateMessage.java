@@ -17,13 +17,13 @@ public class MigrateMessage extends Message{
   private InetAddress srcSaturn;
 
   public MigrateMessage(long thread, String sourceDc, List<String> possibleDatacenters,
-                        Map<String, Integer> clock, InetAddress from, int verb, long timestamp) {
-    this(thread, sourceDc, possibleDatacenters, -1, null, clock, from, verb, timestamp);
+                        Map<String, Integer> clock, InetAddress from, long timestamp) {
+    this(thread, sourceDc, possibleDatacenters, -1, null, clock, from, timestamp);
   }
 
   public MigrateMessage(long thread, String sourceDc, List<String> possibleDatacenters, int labelSaturn,
-                        InetAddress srcSaturn, Map<String, Integer> clock, InetAddress from, int verb, long timestamp) {
-    super(from, verb, CODE, timestamp);
+                        InetAddress srcSaturn, Map<String, Integer> clock, InetAddress from, long timestamp) {
+    super(from, CODE, timestamp);
     this.thread = thread;
     this.sourceDc = sourceDc == null ? "" : sourceDc;
     this.clock = clock == null ? Collections.emptyMap() : clock;
