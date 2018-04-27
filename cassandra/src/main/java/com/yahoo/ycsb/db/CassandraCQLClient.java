@@ -370,6 +370,9 @@ public class CassandraCQLClient extends DB {
       System.exit(1);
       return Status.ERROR;
     } catch (Exception e) {
+      System.err.println("Error in READ: " + e.getMessage());
+      System.err.println(keyspaceManager.currentDc);
+      System.err.println(keyspace);
       e.printStackTrace();
       System.exit(1);
       return Status.ERROR;

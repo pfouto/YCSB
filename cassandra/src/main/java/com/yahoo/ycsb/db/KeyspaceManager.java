@@ -130,7 +130,6 @@ public class KeyspaceManager {
 
         } catch (Exception e) {
           System.err.println("Exception migrating... " + e);
-          System.out.println("Exception migrating... " + e);
           System.exit(1);
         }
 
