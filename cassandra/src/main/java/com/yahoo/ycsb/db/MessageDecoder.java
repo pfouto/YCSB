@@ -29,6 +29,8 @@ public class MessageDecoder extends ByteToMessageDecoder { // (1)
         int messageCode = in.readInt();
         //from
         InetAddress from = CompactEndpointSerializationHelper.deserialize(inputStream);
+        //verb
+        in.readInt();
         //timestamp
         long timestamp = in.readLong();
         switch (messageCode) {
